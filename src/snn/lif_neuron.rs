@@ -3,7 +3,7 @@ use crate::neuron::Neuron;
 use std::f64::consts::E;
 
 /** Model of LIF Neuron (Leaky Integrate-and-Fire) */
-#[derive(Debug)]
+#[derive(Debug,Clone,PartialEq)]
 pub struct LifNeuron {
     v_th: f64,      /* threshold potential */
     v_rest: f64,    /* resting potential */
@@ -26,13 +26,19 @@ impl LifNeuron {
             ts: 0u64,
         }
     }
+    pub fn get_v_mem(&self)->f64{
+        self.v_mem
+    }
+    pub fn get_ts(&self)->u64{
+        self.ts
+    }
 }
 
 impl Neuron for LifNeuron {
     /*
         This function updates the membrane potential of the neuron when it receives at least one spike
     */
-    fn get_v_mem(&mut self, t: u64, extra_sum: f64, intra_sum: f64) -> u8 {
+    fn calculate_v_mem(&mut self, t: u64, extra_sum: f64, intra_sum: f64) -> u8 {
         let weighted_sum = extra_sum + intra_sum;
 
         /* compute the neuron membrane potential with the LIF formula */
