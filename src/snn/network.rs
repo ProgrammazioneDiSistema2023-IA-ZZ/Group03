@@ -1,12 +1,13 @@
-use std::slice::IterMut;
-use std::sync::{Arc, Mutex};
 use crate::neuron::Neuron;
 use crate::snn::layer::Layer;
+use crate::spike_event::SpikeEvent;
 
+use std::slice::IterMut;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 use std::thread::JoinHandle;
-use crate::snn::SpikeEvent;
+
 #[derive(Debug, Clone)]
 pub struct SNN<N: Neuron + Clone + 'static> {
     layers: Vec<Arc<Mutex<Layer<N>>>>
@@ -21,12 +22,12 @@ impl<N: Neuron + Clone> SNN<N> {
         self.layers.len()
     }
 
-    fn get_input_layer_dim(&self) -> usize {
+    pub fn get_input_layer_one_dim(&self) -> usize {
         let first_layer = self.layers[0].lock().unwrap();
         first_layer.get_weights().first().unwrap().len()
     }
 
-    fn get_output_layer_dim(&self) -> usize {
+    pub fn get_output_last_layer_dim(&self) -> usize {
         let last_layer = self.layers.last().unwrap().lock().unwrap();
         last_layer.get_number_neurons()
     }
@@ -47,8 +48,8 @@ impl<N: Neuron + Clone> SNN<N> {
         // * check and compute the spikes duration *
         let spikes_duration = self.spikes_duration(spikes);
 
-        let input_layer_dimension = self.get_input_layer_dim();
-        let output_layer_dimension = self.get_output_layer_dim();
+        let input_layer_dimension = self.get_input_layer_one_dim();
+        let output_layer_dimension = self.get_output_last_layer_dim();
 
         // * encode spikes into SpikeEvent(s) *
         let input_spike_events =
@@ -119,8 +120,8 @@ impl<N: Neuron + Clone> SNN<N> {
         let mut raw_spikes  = vec![vec![0; spikes_duration]; output_layer_dimension];
 
         for spike_event in spikes {
-            for (out_neuron_index, spike) in spike_event.spikes.into_iter().enumerate() {
-                raw_spikes[out_neuron_index][spike_event.ts as usize] = spike;
+            for (out_neuron_index, spike) in spike_event.get_spikes().into_iter().enumerate() {
+                raw_spikes[out_neuron_index][spike_event.get_ts() as usize] = spike;
             }
         }
 
@@ -156,11 +157,11 @@ impl<N: Neuron + Clone> SNN<N> {
         /* fire input SpikeEvents into *net_input_tx* */
         for spike_event in spikes {
             /* * check if there is at least 1 spike, otherwise skip to the next instant * */
-            if spike_event.spikes.iter().all(|spike| *spike == 0u8) {
+            if spike_event.get_spikes().iter().all(|spike| *spike == 0u8) {
                 continue;   /* (process only *effective* spike events) */
             }
 
-            let instant = spike_event.ts;
+            let instant = spike_event.get_ts();
 
             net_input_tx.send(spike_event)
                 .expect(&format!("Unexpected error sending input spike event t={}", instant));

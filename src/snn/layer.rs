@@ -1,6 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 use crate::snn::neuron::Neuron;
-use crate::snn::SpikeEvent;
+use crate::snn::spike_event::SpikeEvent;
 
 #[derive(Debug)]
 pub struct Layer<N: Neuron + Clone + Send + 'static> {
@@ -46,7 +46,7 @@ impl<N: Neuron + Clone + Send + 'static> Layer<N> {
 
         /* listen to SpikeEvent(s) coming from the previous layer and process them */
         while let Ok(input_spike_event) = layer_input_rc.recv() {
-            let instant = input_spike_event.ts;    /* time instant of the input spike */
+            let instant = input_spike_event.get_ts();    /* time instant of the input spike */
             let mut output_spikes = Vec::<u8>::with_capacity(self.neurons.len());
             let mut at_least_one_spike = false;
 
@@ -59,8 +59,9 @@ impl<N: Neuron + Clone + Send + 'static> Layer<N> {
                 let mut intra_weighted_sum = 0f64;
 
                 /* compute extra weighted sum */
+                let events = input_spike_event.get_spikes();
                 let extra_weights_pairs =
-                    self.weights[index].iter().zip(input_spike_event.spikes.iter());
+                    self.weights[index].iter().zip(events.iter());
 
                 for (weight, spike) in extra_weights_pairs {
                     if *spike != 0 {

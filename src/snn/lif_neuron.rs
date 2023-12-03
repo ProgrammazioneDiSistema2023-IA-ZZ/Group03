@@ -32,6 +32,21 @@ impl LifNeuron {
     pub fn get_ts(&self)->u64{
         self.ts
     }
+    pub fn get_v_th(&self) -> f64 {
+        self.v_th
+    }
+    pub fn get_v_rest(&self) -> f64 {
+        self.v_rest
+    }
+    pub fn get_v_reset(&self) -> f64 {
+        self.v_reset
+    }
+    pub fn get_tau(&self) -> f64 {
+        self.tau
+    }
+    pub fn get_dt(&self) -> f64 {
+        self.dt
+    }
 }
 
 impl Neuron for LifNeuron {
@@ -44,6 +59,9 @@ impl Neuron for LifNeuron {
         /* compute the neuron membrane potential with the LIF formula */
         let diff_time = (t - self.ts) as f64;
         let exponent = -(diff_time * self.dt / self.tau);
+        /** TODO!
+            self.dt
+         */
         self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + weighted_sum;
 
         /* update ts at the last instant in which one spike (1) is received */
