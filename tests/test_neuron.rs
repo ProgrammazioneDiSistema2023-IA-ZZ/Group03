@@ -16,12 +16,11 @@ fn verify_init() {
 fn verify_get_v_mem_one() {
     let extra_sum = 5.3;
     let t = 2u64;
-    let intra_sum = 7.8;
     let v_reset = 0.3;
 
     let mut n = LifNeuron::new(0.1, 0.2, v_reset, 0.4, 0.5);
 
-    assert_eq!(n.calculate_v_mem(t,extra_sum,intra_sum),1);
+    assert_eq!(n.calculate_v_mem(t,extra_sum),1);
     assert_eq!(n.get_v_mem(),v_reset);
 
 }
@@ -30,11 +29,10 @@ fn verify_get_v_mem_one() {
 fn verify_get_v_mem_zero() {
     let extra_sum = 5.3;
     let t = 2u64;
-    let intra_sum = 7.8;
     let v_reset = 0.3;
 
     let mut n = LifNeuron::new(20.2, 0.2, v_reset, 0.4, 0.5);
 
-    assert_eq!(n.calculate_v_mem(t,extra_sum,intra_sum),0);
+    assert_eq!(n.calculate_v_mem(t,extra_sum),0);
 
 }

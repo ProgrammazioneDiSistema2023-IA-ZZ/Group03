@@ -5,7 +5,9 @@ use spiking_neural_network::network::SNN;
 
 fn create_layer() -> Layer<LifNeuron> {
     let n = LifNeuron::new(0.1, 0.2, 0.3, 0.4, 0.5);
-    let neurons = vec![n; 3];
+    let n2 = LifNeuron::new(0.7, 0.2, 0.1, 0.2, 0.1);
+    let n3 = LifNeuron::new(0.9, 0.5, 0.2, 0.1, 0.25);
+    let neurons = vec![n, n2, n3];
 
     let weights = vec![
         vec![0.1, 0.2],
@@ -14,9 +16,9 @@ fn create_layer() -> Layer<LifNeuron> {
     ];
 
     let intra_weights = vec![
-        vec![0.0, -0.1, -0.15],
+        vec![0.0, -0.5, -0.15],
         vec![-0.05, 0.0, -0.1],
-        vec![-0.15, -0.1, 0.0],
+        vec![-0.35, -0.1, 0.0],
     ];
 
     let l = Layer::new(neurons, weights, intra_weights);
@@ -30,6 +32,14 @@ fn create_snn() -> SNN<LifNeuron> {
     layers.push(Arc::new(Mutex::new(layer.clone())));
     layers.push(Arc::new(Mutex::new(layer.clone())));
 
+    SNN::new(layers)
+}
+
+fn create_snn_1_layer() -> SNN<LifNeuron> {
+    let layer = create_layer();
+    let mut layers: Vec<Arc<Mutex<Layer<LifNeuron>>>> = Vec::new();
+
+    layers.push(Arc::new(Mutex::new(layer.clone())));
     SNN::new(layers)
 }
 
@@ -47,6 +57,27 @@ fn verify_get_input_layer_dim(){
 
 #[test]
 fn verify_get_output_layer_dim(){
+    let n = create_snn();
+    assert_eq!(n.get_output_last_layer_dim(), 3);
+}
+
+#[test]
+fn verify_output_last_layer_dim(){
+    let mut n = create_snn_1_layer();
+    let input_spikes: Vec<Vec<u8>> = vec![
+        vec![0,1,1],     /* 1st neuron input train of spikes */
+        vec![1,0,1],     /* 2nd neuron input train of spikes */
+    ];
+    //let val = n.process(&input_spikes);
+    assert_eq!(n.process(&input_spikes), vec![
+                                            vec![1,1,1],     /* 1st neuron input train of spikes */
+                                            vec![0,0,1],     /* 2nd neuron input train of spikes */
+                                            vec![1,1,1],     /* 3rd neuron input train of spikes */
+                                        ]);
+}
+
+#[test]
+fn verify_output_first_layer_dim(){
     let n = create_snn();
     assert_eq!(n.get_output_last_layer_dim(), 3);
 }

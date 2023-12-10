@@ -130,7 +130,6 @@ impl<N: Neuron + Clone> SNN<N> {
 
     fn process_events(&mut self, spikes: Vec<SpikeEvent>) -> Vec<SpikeEvent> {
         let mut threads = Vec::<JoinHandle<()>>::new();
-
         /* create channel to feed the (first layer of the) network */
         let (net_input_tx, mut layer_rc) = channel::<SpikeEvent>();
 

@@ -29,6 +29,7 @@ impl LifNeuron {
     pub fn get_v_mem(&self)->f64{
         self.v_mem
     }
+
     pub fn get_ts(&self)->u64{
         self.ts
     }
@@ -47,31 +48,48 @@ impl LifNeuron {
     pub fn get_dt(&self) -> f64 {
         self.dt
     }
+
 }
 
 impl Neuron for LifNeuron {
+
+    fn set_v_mem(&mut self, intra: f64) {
+        self.v_mem += intra;
+    }
     /*
-        This function updates the membrane potential of the neuron when it receives at least one spike
-    */
-    fn calculate_v_mem(&mut self, t: u64, extra_sum: f64, intra_sum: f64) -> u8 {
-        let weighted_sum = extra_sum + intra_sum;
-
-        /* compute the neuron membrane potential with the LIF formula */
+    This function updates the membrane potential of the neuron when it receives at least one spike
+*/
+    fn print_lif_neuron(&self) {
+        println!("v_th : {}, v_rest : {}, v_reset : {}, tau : {}, dt : {}, v_mem: {}, ts: {}",
+                 self.get_v_th(), self.get_v_rest(), self.get_v_reset(), self.get_tau(),
+                 self.get_dt(), self.get_v_mem(), self.get_ts() );
+    }
+    fn calculate_v_mem(&mut self, t: u64, extra_sum: f64) -> u8 {
         let diff_time = (t - self.ts) as f64;
-        let exponent = -(diff_time * self.dt / self.tau);
+        let mut exponent=0.0;
+        if diff_time != 0.0 && self.tau != 0.0 && self.dt != 0.0 {
+            exponent = -(diff_time * self.dt / self.tau);
+        }
         /** TODO!
-            self.dt
+                          self.dt
          */
-        self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + weighted_sum;
-
-        /* update ts at the last instant in which one spike (1) is received */
+        let mut esp :f64= 0.0;
+        if (t as f64 - self.ts as f64) != 0.0 && self.tau != 0.0 {
+            esp = (t as f64 - self.ts as f64)/self.tau ;
+        }
+        let base: f64 = 1.0 - 0.368;
+        self.v_mem =  self.v_mem*( base.powf(esp) );
+        if self.v_mem < self.v_rest {
+            self.v_mem = self.v_rest;
+        }
+        self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + extra_sum;
         self.ts = t;
 
         return if self.v_mem > self.v_th {
-            self.v_mem = self.v_reset;  /* reset membrane potential */
+            self.v_mem = self.v_reset;
             1
         } else {
-            0
+            return 0;
         };
     }
 
