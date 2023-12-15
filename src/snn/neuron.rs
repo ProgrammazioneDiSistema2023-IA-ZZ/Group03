@@ -7,10 +7,13 @@ pub trait Neuron: Send {
         extra_sum: the product of input spikes and incoming weights, always > 0
         intra_sum: the product of input spikes from the previous instant and the intra-layer weights
      */
+    fn set_v_mem(&mut self, intra: f64);
+    fn get_v_th(&self) -> f64;
+    fn set_v_th(&mut self, new_val:f64);
+    fn print_lif_neuron(&self) ;
     fn calculate_v_mem(&mut self, t: u64, extra_sum: f64) -> u8;
 
     /** initialize all data structures of Neuron */
     fn init(&mut self);
-    fn set_v_mem(&mut self, intra: f64);
-    fn print_lif_neuron(&self) ;
+    fn modify_bits(&self, vec_byte: &mut Vec<u8>, position: u8, val:u8);
 }

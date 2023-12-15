@@ -2,26 +2,32 @@ use std::io::Write;
 use std::sync::mpsc::{Receiver, Sender};
 use crate::snn::neuron::Neuron;
 use crate::snn::spike_event::SpikeEvent;
+use crate::snn::configuration::Configuration;
+use crate::failure::{Conf, Failure, Stuck_at_0, Stuck_at_1, Transient_bit_flip};
+
 #[derive(Debug)]
-pub struct Layer<N: Neuron + Clone + Send + 'static> {
+pub struct Layer<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'static> {
     neurons: Vec<N>,
     weights: Vec<Vec<f64>>,
     intra_weights: Vec<Vec<f64>>,
-    prev_spikes: Vec<u8>
+    prev_spikes: Vec<u8>,
+    configuration: R,
 }
 
-impl<N: Neuron + Clone + Send + 'static> Layer<N> {
+impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'static> Layer<N,R> {
     pub fn new(
         neurons: Vec<N>,
         weights: Vec<Vec<f64>>,
         intra_weights: Vec<Vec<f64>>,
+        configuration: R,
     ) -> Self {
         let num_neurons = neurons.len();
         Self {
             neurons,
             weights,
             intra_weights,
-            prev_spikes: vec![0; num_neurons]
+            prev_spikes: vec![0; num_neurons],
+            configuration,
         }
     }
 
@@ -41,6 +47,8 @@ impl<N: Neuron + Clone + Send + 'static> Layer<N> {
     }
 
     pub fn get_prev_spikes(&self) -> Vec<u8> { self.prev_spikes.clone() }
+
+    pub fn get_configuration(&self) -> R { self.configuration.clone() }
 
     fn modify_v_mem(&mut self, index: usize) {
         for index2 in 0..self.neurons.len(){
@@ -65,13 +73,38 @@ impl<N: Neuron + Clone + Send + 'static> Layer<N> {
             }
             /* compute membrane potential and determine if the Neuron fires or not */
             let neuron_spike = neuron.calculate_v_mem(instant, extra_weighted_sum);
-
+            // vedere se la configure è sul neuron o meno
+            if self.configuration.get_len_vec_components() > 0 {
+                let elementi = self.configuration.get_vec_components();
+                match self.configuration.get_failure() {
+                    Failure::StuckAt0(stuck_at_0) => {
+                        if elementi.contains(&"v_th".to_string()) {
+                            let mut vec_byte_original : Vec<u8> = Vec::new();
+                            for byte in neuron.get_v_th().to_be_bytes() {
+                                vec_byte_original.push(byte);
+                            }
+                            neuron.modify_bits(&mut vec_byte_original,stuck_at_0.get_position(),stuck_at_0.get_valore());
+                            let mut u64_value = 0u64;
+                            for byte in vec_byte_original {//cercare di farlo in modo automatico in base a architettura
+                                u64_value = (u64_value << 8) | byte as u64;
+                            }
+                            neuron.set_v_th(f64::from_bits(u64_value) );
+                        }
+                    },
+                    Failure::StuckAt1(stuck_at_1) => {}
+                    Failure::TransientBitFlip(transient_bit_flip) => {}
+                    Failure::None => {}
+                }
+            }
             output_spikes.push(neuron_spike);
             if neuron_spike == 1u8 {
                 *at_least_one_spike = true;
                 *index_outside = index+1 + *index_outside;
                 break;
             }
+        }
+        if !*at_least_one_spike {
+            *index_outside = self.neurons.len() ;
         }
     }
     pub fn process(&mut self, layer_input_rc: Receiver<SpikeEvent>, layer_output_tx: Sender<SpikeEvent>) {
@@ -87,7 +120,9 @@ impl<N: Neuron + Clone + Send + 'static> Layer<N> {
             while index_outside < self.neurons.len() {
                 self.continue_gen_spike(&input_spike_event, instant, output_spikes.by_ref(),
                                         &mut at_least_one_spike, &mut index_outside);
-                self.modify_v_mem(index_outside);
+                if index_outside> 0 && index_outside < self.neurons.len() {
+                    self.modify_v_mem(index_outside);
+                }
             }
             /* save output spikes for later */
             self.prev_spikes = output_spikes.clone();
@@ -109,13 +144,14 @@ impl<N: Neuron + Clone + Send + 'static> Layer<N> {
     }
 }
 
-impl<N: Neuron + Clone + Send + 'static> Clone for Layer<N> {
+impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'static> Clone for Layer<N,R> {
     fn clone(&self) -> Self {
         Self {
             neurons: self.neurons.clone(),
             weights: self.weights.clone(),
             intra_weights: self.intra_weights.clone(),
-            prev_spikes: self.prev_spikes.clone()
+            prev_spikes: self.prev_spikes.clone(),
+            configuration: self.configuration.clone(),
         }
     }
 }
