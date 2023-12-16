@@ -3,7 +3,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use crate::snn::neuron::Neuron;
 use crate::snn::spike_event::SpikeEvent;
 use crate::snn::configuration::Configuration;
-use crate::failure::{Conf, Failure, Stuck_at_0, Stuck_at_1, Transient_bit_flip};
+use crate::failure::{Failure, Stuck_at_1, Transient_bit_flip};
 
 #[derive(Debug)]
 pub struct Layer<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'static> {
@@ -54,7 +54,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
         for index2 in 0..self.neurons.len(){
             if index2 != index-1 {
                 let val = self.intra_weights.get(index-1).unwrap().get(index2).unwrap().clone();
-                self.neurons[index2].set_v_mem(val);
+                self.neurons[index2].decrement_v_mem(val);
             }
         }
     }
@@ -80,19 +80,43 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     Failure::StuckAt0(stuck_at_0) => {
                         if elementi.contains(&"v_th".to_string()) {
                             let mut vec_byte_original : Vec<u8> = Vec::new();
-                            for byte in neuron.get_v_th().to_be_bytes() {
+                            for byte in neuron.get_v_th().to_ne_bytes() {
                                 vec_byte_original.push(byte);
                             }
                             neuron.modify_bits(&mut vec_byte_original,stuck_at_0.get_position(),stuck_at_0.get_valore());
-                            let mut u64_value = 0u64;
-                            for byte in vec_byte_original {//cercare di farlo in modo automatico in base a architettura
-                                u64_value = (u64_value << 8) | byte as u64;
-                            }
-                            neuron.set_v_th(f64::from_bits(u64_value) );
+                            neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
                         }
                     },
-                    Failure::StuckAt1(stuck_at_1) => {}
-                    Failure::TransientBitFlip(transient_bit_flip) => {}
+                    Failure::StuckAt1(stuck_at_1) => {
+                        if elementi.contains(&"v_mem".to_string()) {
+                            let mut vec_byte_original : Vec<u8> = Vec::new();
+                            for byte in neuron.get_v_mem().to_ne_bytes() {
+                                vec_byte_original.push(byte);
+                            }
+                            neuron.modify_bits(&mut vec_byte_original,stuck_at_1.get_position(),stuck_at_1.get_valore());
+                            neuron.set_v_mem(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        }
+                    }
+                    Failure::TransientBitFlip(mut transient_bit_flip) => {
+                        if !transient_bit_flip.get_bit_changed() {
+                            if elementi.contains(&"v_th".to_string()) {
+                                let mut vec_byte_original : Vec<u8> = Vec::new();
+                                let mut byte_original = 0u8;
+                                let mut count = 0;
+                                for byte in neuron.get_v_th().to_ne_bytes() {
+                                    vec_byte_original.push(byte);
+                                    if count == transient_bit_flip.get_position()/8 {
+                                        byte_original = byte;
+                                    }
+                                    count += 1;
+                                }
+                                let valor_bit =  (byte_original >> transient_bit_flip.get_position()%8) & 1;
+                                neuron.modify_bits(&mut vec_byte_original,transient_bit_flip.get_position(),valor_bit);
+                                transient_bit_flip.set_bit_changed(true);
+                                neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                            }
+                        }
+                    }
                     Failure::None => {}
                 }
             }

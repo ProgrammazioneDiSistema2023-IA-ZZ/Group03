@@ -6,7 +6,7 @@ use spiking_neural_network::layer::Layer;
 use spiking_neural_network::neuron::Neuron;
 
 fn create_layer() -> Layer<LifNeuron, Conf> {
-    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4, 0.5);
+    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4);
     let neurons = vec![n; 3];
 
     let weights = vec![
@@ -20,7 +20,7 @@ fn create_layer() -> Layer<LifNeuron, Conf> {
         vec![-0.05, 0.0, -0.1],
         vec![-0.15, -0.1, 0.0],
     ];
-    let failure = Failure::StuckAt0(Stuck_at_0::new(13));
+    let failure = Failure::TransientBitFlip(Transient_bit_flip::new(15));
     let configuration = Conf::new(vec!["v_th".to_string()],failure);
     let l = Layer::new(neurons, weights, intra_weights,configuration);
     l
@@ -37,7 +37,7 @@ fn verify_get_number_neurons() {
 fn verify_get_neurons() {
     let l = create_layer();
 
-    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4, 0.5);
+    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4);
     let neurons = vec![n; 3];
 
     assert_eq!(l.get_neurons(), neurons);
@@ -81,19 +81,41 @@ fn verify_modification_bit_v_th() {
             match fail {
                 Failure::StuckAt0(stuck_at_0) => {
                     let mut vec_byte_original : Vec<u8> = Vec::new();
-                    for byte in lif.get_v_th().to_be_bytes() {
+                    for byte in lif.get_v_th().to_ne_bytes() {
                         vec_byte_original.push(byte);
                     }
                     lif.modify_bits(&mut vec_byte_original,stuck_at_0.get_position(), stuck_at_0.get_valore());
-                    let mut u64_value = 0u64;
-                    for byte in vec_byte_original {
-                        u64_value = (u64_value << 8) | byte as u64;
-                    }
-                    lif.set_v_th(f64::from_bits(u64_value) );
-                    assert_eq!(lif.get_v_th(), 0.65);
+                    lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                    assert_eq!(lif.get_v_th(), 0.65);//usare posizione 13
                 }
-                Failure::StuckAt1(stuck_at_1) => {}
-                Failure::TransientBitFlip(transient_bit) => {}
+                Failure::StuckAt1(stuck_at_1) => {
+                    let mut vec_byte_original : Vec<u8> = Vec::new();
+                    for byte in lif.get_v_th().to_ne_bytes() {
+                        vec_byte_original.push(byte);
+                    }
+                    lif.modify_bits(&mut vec_byte_original,stuck_at_1.get_position(),stuck_at_1.get_valore());
+                    lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                    assert_eq!(lif.get_v_th(), 0.9625);//usare posizione 15
+                }
+                Failure::TransientBitFlip(mut transient_bit) => {
+                    if !transient_bit.get_bit_changed() {
+                        let mut vec_byte_original : Vec<u8> = Vec::new();
+                        let mut byte_original = 0u8;
+                        let mut count = 0;
+                        for byte in lif.get_v_th().to_ne_bytes() {
+                            vec_byte_original.push(byte);
+                            if count == transient_bit.get_position()/8 {
+                                byte_original = byte;
+                            }
+                            count += 1;
+                        }
+                        let valor_bit =  (byte_original >> transient_bit.get_position()%8) & 1;
+                        lif.modify_bits(&mut vec_byte_original, transient_bit.get_position(), valor_bit);
+                        transient_bit.set_bit_changed(true);
+                        lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        assert_eq!(lif.get_v_th(), 0.9625);//usare posizione 15
+                    }
+                }
                 Failure::None => {}
             }
         }

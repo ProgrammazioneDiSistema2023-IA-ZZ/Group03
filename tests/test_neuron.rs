@@ -1,10 +1,9 @@
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::neuron::Neuron;
-//use spiking_neural_network::configuration::Configuration;
 #[test]
 fn verify_init() {
     let rest = 0.2;
-    let mut n = LifNeuron::new(0.1, rest, 0.3, 0.4, 0.5);
+    let mut n = LifNeuron::new(0.1, rest, 0.3, 0.4);
 
     n.init();
 
@@ -18,7 +17,7 @@ fn verify_get_v_mem_one() {
     let t = 2u64;
     let v_reset = 0.3;
 
-    let mut n = LifNeuron::new(0.1, 0.2, v_reset, 0.4, 0.5);
+    let mut n = LifNeuron::new(0.1, 0.2, v_reset, 0.4);
 
     assert_eq!(n.calculate_v_mem(t,extra_sum),1);
     assert_eq!(n.get_v_mem(),v_reset);
@@ -31,7 +30,7 @@ fn verify_get_v_mem_zero() {
     let t = 2u64;
     let v_reset = 0.3;
 
-    let mut n = LifNeuron::new(20.2, 0.2, v_reset, 0.4, 0.5);
+    let mut n = LifNeuron::new(20.2, 0.2, v_reset, 0.4);
 
     assert_eq!(n.calculate_v_mem(t,extra_sum),0);
 
@@ -39,9 +38,8 @@ fn verify_get_v_mem_zero() {
 
 #[test]
 fn verify_value_neuron() {
-    let position = 10u64;
     let v_reset = 0.3;
-    let mut n = LifNeuron::new(20.2, 0.2, v_reset, 0.4, 0.5);
+    let mut n = LifNeuron::new(20.2, 0.2, v_reset, 0.4);
     let campo = n.get_v_th();
     n.set_v_th(campo);
     assert_eq!( n.get_v_th() ,campo);

@@ -9,19 +9,17 @@ pub struct LifNeuron {
     v_rest: f64,    /* resting potential */
     v_reset: f64,   /* reset potential */
     tau: f64,
-    dt: f64,        /* time interval between two consecutive instants */
     v_mem: f64,     /* membrane potential */
     ts: u64,        /* last instant in which has been received at least one spike */
 }
 
 impl LifNeuron {
-    pub fn new(v_th: f64, v_rest: f64, v_reset: f64, tau: f64, dt: f64) -> Self {
+    pub fn new(v_th: f64, v_rest: f64, v_reset: f64, tau: f64) -> Self {
         Self {
             v_th,
             v_rest,
             v_reset,
             tau,
-            dt,
             v_mem: v_rest,
             ts: 0u64,
         }
@@ -45,15 +43,42 @@ impl LifNeuron {
     pub fn get_tau(&self) -> f64 {
         self.tau
     }
-    pub fn get_dt(&self) -> f64 {
-        self.dt
-    }
 
 }
 
 impl Neuron for LifNeuron {
+    fn get_v_mem(&self)->f64{
+        self.v_mem
+    }
+    fn get_ts(&self)->u64{
+        self.ts
+    }
+    fn get_v_rest(&self) -> f64 {
+        self.v_rest
+    }
+    fn get_v_reset(&self) -> f64 {
+        self.v_reset
+    }
+    fn get_tau(&self) -> f64 {
+        self.tau
+    }
+    fn set_v_mem(&mut self, val: f64) {
+        self.v_mem = val;
+    }
+    fn set_tau(&mut self, val: f64) {
+        self.tau = val;
+    }
+    fn set_v_reset(&mut self, val: f64) {
+        self.v_reset = val;
+    }
+    fn set_v_rest(&mut self, val: f64) {
+        self.v_rest = val;
+    }
+    fn set_ts(&mut self, val: u64) {
+        self.ts = val;
+    }
 
-    fn set_v_mem(&mut self, intra: f64) {
+    fn decrement_v_mem(&mut self, intra: f64) {
         self.v_mem += intra;
     }
     fn get_v_th(&self) -> f64 {
@@ -64,9 +89,9 @@ impl Neuron for LifNeuron {
     This function updates the membrane potential of the neuron when it receives at least one spike
 */
     fn print_lif_neuron(&self) {
-        println!("v_th : {}, v_rest : {}, v_reset : {}, tau : {}, dt : {}, v_mem: {}, ts: {}",
+        println!("v_th : {}, v_rest : {}, v_reset : {}, tau : {}, v_mem: {}, ts: {}",
                  self.get_v_th(), self.get_v_rest(), self.get_v_reset(), self.get_tau(),
-                 self.get_dt(), self.get_v_mem(), self.get_ts() );
+                 self.get_v_mem(), self.get_ts() );
     }
     fn calculate_v_mem(&mut self, t: u64, extra_sum: f64) -> u8 {
         let diff_time = (t - self.ts) as f64;
@@ -94,7 +119,7 @@ impl Neuron for LifNeuron {
 
     fn modify_bits(&self, vec_byte:&mut Vec<u8>, position: u8, val:u8) {
         let rest_position =8- (position%8);//verifica architettura
-         for (pos,byte) in vec_byte.iter_mut().enumerate() {
+         for (pos,byte) in vec_byte.iter_mut().rev().enumerate() {
              if (position/8) == pos as u8 {
                  let maschera = 1_u8.checked_shl(rest_position as u32) ;
                  match maschera {

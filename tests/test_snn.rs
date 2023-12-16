@@ -4,10 +4,9 @@ use spiking_neural_network::layer::Layer;
 use spiking_neural_network::network::SNN;
 use spiking_neural_network::failure::{Conf, Failure, Stuck_at_0, Stuck_at_1, Transient_bit_flip};
 fn create_layer() -> Layer<LifNeuron,Conf> {
-    let n = LifNeuron::new(0.76, 0.33, 0.14, 0.4, 0.5);
-    let n2 = LifNeuron::new(0.88, 0.3, 0.1, 0.2, 0.1);
-    let n3 = LifNeuron::new(0.9, 0.2, 0.05, 0.1, 0.25);
-    //let n3 = LifNeuron::new(0.9, 0.5, 0.2, 0.1, 0.25);
+    let n = LifNeuron::new(0.76, 0.33, 0.14, 0.4);
+    let n2 = LifNeuron::new(0.88, 0.3, 0.1, 0.2);
+    let n3 = LifNeuron::new(0.9, 0.2, 0.05, 0.1);
     let failure = Failure::StuckAt0(Stuck_at_0::new(0));
     let configuration = Conf::new(vec!["v_mem".to_string(),"v_th".to_string()],failure);
     let neurons = vec![n, n2, n3];
@@ -71,7 +70,6 @@ fn verify_output_last_layer_dim(){
         vec![0,1,1],     /* 1st neuron input train of spikes */
         vec![1,0,1],     /* 2nd neuron input train of spikes */
     ];
-    let val = n.process(&input_spikes);
     assert_eq!(n.process(&input_spikes), vec![
                                             vec![0,0,0],     /* 1st neuron input train of spikes */
                                             vec![1,0,0],     /* 2nd neuron input train of spikes */
