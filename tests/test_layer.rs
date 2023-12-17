@@ -80,36 +80,22 @@ fn verify_modification_bit_v_th() {
             let fail = l.get_configuration().get_failure();
             match fail {
                 Failure::StuckAt0(stuck_at_0) => {
-                    let mut vec_byte_original : Vec<u8> = Vec::new();
-                    for byte in lif.get_v_th().to_ne_bytes() {
-                        vec_byte_original.push(byte);
-                    }
+                    let mut vec_byte_original: Vec<u8> = lif.get_v_th().to_ne_bytes().iter().cloned().collect();
                     lif.modify_bits(&mut vec_byte_original,stuck_at_0.get_position(), stuck_at_0.get_valore());
                     lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
                     assert_eq!(lif.get_v_th(), 0.65);//usare posizione 13
                 }
                 Failure::StuckAt1(stuck_at_1) => {
-                    let mut vec_byte_original : Vec<u8> = Vec::new();
-                    for byte in lif.get_v_th().to_ne_bytes() {
-                        vec_byte_original.push(byte);
-                    }
+                    let mut vec_byte_original: Vec<u8> = lif.get_v_th().to_ne_bytes().iter().cloned().collect();
                     lif.modify_bits(&mut vec_byte_original,stuck_at_1.get_position(),stuck_at_1.get_valore());
                     lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
                     assert_eq!(lif.get_v_th(), 0.9625);//usare posizione 15
                 }
                 Failure::TransientBitFlip(mut transient_bit) => {
                     if !transient_bit.get_bit_changed() {
-                        let mut vec_byte_original : Vec<u8> = Vec::new();
-                        let mut byte_original = 0u8;
-                        let mut count = 0;
-                        for byte in lif.get_v_th().to_ne_bytes() {
-                            vec_byte_original.push(byte);
-                            if count == transient_bit.get_position()/8 {
-                                byte_original = byte;
-                            }
-                            count += 1;
-                        }
-                        let valor_bit =  (byte_original >> transient_bit.get_position()%8) & 1;
+                        let mut vec_byte_original:Vec<u8> = lif.get_v_th().to_ne_bytes().iter().cloned().collect();
+                        let byte_original = vec_byte_original.get(transient_bit.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                        let valor_bit = (byte_original >> (transient_bit.get_position() % 8)) & 1;
                         lif.modify_bits(&mut vec_byte_original, transient_bit.get_position(), valor_bit);
                         transient_bit.set_bit_changed(true);
                         lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));

@@ -79,20 +79,14 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                 match self.configuration.get_failure() {
                     Failure::StuckAt0(stuck_at_0) => {
                         if elementi.contains(&"v_th".to_string()) {
-                            let mut vec_byte_original : Vec<u8> = Vec::new();
-                            for byte in neuron.get_v_th().to_ne_bytes() {
-                                vec_byte_original.push(byte);
-                            }
+                            let mut vec_byte_original: Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
                             neuron.modify_bits(&mut vec_byte_original,stuck_at_0.get_position(),stuck_at_0.get_valore());
                             neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
                         }
                     },
                     Failure::StuckAt1(stuck_at_1) => {
                         if elementi.contains(&"v_mem".to_string()) {
-                            let mut vec_byte_original : Vec<u8> = Vec::new();
-                            for byte in neuron.get_v_mem().to_ne_bytes() {
-                                vec_byte_original.push(byte);
-                            }
+                            let mut vec_byte_original: Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
                             neuron.modify_bits(&mut vec_byte_original,stuck_at_1.get_position(),stuck_at_1.get_valore());
                             neuron.set_v_mem(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
                         }
@@ -100,17 +94,9 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     Failure::TransientBitFlip(mut transient_bit_flip) => {
                         if !transient_bit_flip.get_bit_changed() {
                             if elementi.contains(&"v_th".to_string()) {
-                                let mut vec_byte_original : Vec<u8> = Vec::new();
-                                let mut byte_original = 0u8;
-                                let mut count = 0;
-                                for byte in neuron.get_v_th().to_ne_bytes() {
-                                    vec_byte_original.push(byte);
-                                    if count == transient_bit_flip.get_position()/8 {
-                                        byte_original = byte;
-                                    }
-                                    count += 1;
-                                }
-                                let valor_bit =  (byte_original >> transient_bit_flip.get_position()%8) & 1;
+                                let mut vec_byte_original:Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
+                                let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                                let valor_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
                                 neuron.modify_bits(&mut vec_byte_original,transient_bit_flip.get_position(),valor_bit);
                                 transient_bit_flip.set_bit_changed(true);
                                 neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
