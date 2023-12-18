@@ -11,10 +11,11 @@ pub struct LifNeuron {
     tau: f64,
     v_mem: f64,     /* membrane potential */
     ts: u64,        /* last instant in which has been received at least one spike */
+    dt: f64,
 }
 
 impl LifNeuron {
-    pub fn new(v_th: f64, v_rest: f64, v_reset: f64, tau: f64) -> Self {
+    pub fn new(v_th: f64, v_rest: f64, v_reset: f64, tau: f64, dt: f64) -> Self {
         Self {
             v_th,
             v_rest,
@@ -22,6 +23,7 @@ impl LifNeuron {
             tau,
             v_mem: v_rest,
             ts: 0u64,
+            dt,
         }
     }
     pub fn get_v_mem(&self)->f64{
@@ -43,10 +45,15 @@ impl LifNeuron {
     pub fn get_tau(&self) -> f64 {
         self.tau
     }
-
+    pub fn get_dt(&self)->f64{
+        self.dt
+    }
 }
 
 impl Neuron for LifNeuron {
+    fn get_dt(&self)->f64{
+        self.dt
+    }
     fn get_v_mem(&self)->f64{
         self.v_mem
     }
@@ -97,10 +104,7 @@ impl Neuron for LifNeuron {
         let diff_time = (t - self.ts) as f64;
         let mut exponent=0.0;
         if diff_time != 0.0 && self.tau != 0.0 {
-            exponent = -(diff_time / self.tau);
-        }
-        if self.v_mem < self.v_rest {
-            self.v_mem = self.v_rest;
+            exponent = -(diff_time*self.dt / self.tau);
         }
         self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + extra_sum;
         self.ts = t;

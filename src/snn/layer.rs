@@ -64,6 +64,39 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
             let mut extra_weighted_sum = 0f64;
             /* compute extra weighted sum */
             let events = input_spike_event.get_spikes();
+
+            if self.configuration.get_len_vec_components() > 0 {
+                let elementi = self.configuration.get_vec_components();
+                match self.configuration.get_failure() {
+                    Failure::StuckAt0(stuck_at_0) => {
+                        if elementi.contains(&"v_th".to_string()) {
+                            let mut vec_byte_original: Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
+                            neuron.modify_bits(&mut vec_byte_original,stuck_at_0.get_position(),stuck_at_0.get_valore());
+                            neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        }
+                    },
+                    Failure::StuckAt1(stuck_at_1) => {
+                        if elementi.contains(&"v_mem".to_string()) {
+                            let mut vec_byte_original: Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
+                            neuron.modify_bits(&mut vec_byte_original,stuck_at_1.get_position(),stuck_at_1.get_valore());
+                            neuron.set_v_mem(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        }
+                    }
+                    Failure::TransientBitFlip(mut transient_bit_flip) => {
+                        if !transient_bit_flip.get_bit_changed() {
+                            if elementi.contains(&"v_th".to_string()) {
+                                let mut vec_byte_original:Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
+                                let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                                let valor_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
+                                neuron.modify_bits(&mut vec_byte_original,transient_bit_flip.get_position(),valor_bit);
+                                transient_bit_flip.set_bit_changed(true);
+                                neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                            }
+                        }
+                    }
+                    Failure::None => {}
+                }
+            }
             let extra_weights_pairs = self.weights[index + *index_outside].iter().zip(events.iter());
 
             for (weight, spike) in extra_weights_pairs {
@@ -71,9 +104,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     extra_weighted_sum += *weight;
                 }
             }
-            /* compute membrane potential and determine if the Neuron fires or not */
             let neuron_spike = neuron.calculate_v_mem(instant, extra_weighted_sum);
-            // vedere se la configure è sul neuron o meno
             if self.configuration.get_len_vec_components() > 0 {
                 let elementi = self.configuration.get_vec_components();
                 match self.configuration.get_failure() {
@@ -113,9 +144,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                 break;
             }
         }
-        if !*at_least_one_spike {
-            *index_outside = self.neurons.len() ;
-        }
+        *index_outside = self.neurons.len() ;
     }
     pub fn process(&mut self, layer_input_rc: Receiver<SpikeEvent>, layer_output_tx: Sender<SpikeEvent>) {
         /* initialize data structures, so that the SNN can be reused */

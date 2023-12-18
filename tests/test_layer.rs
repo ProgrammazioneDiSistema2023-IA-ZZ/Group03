@@ -6,7 +6,7 @@ use spiking_neural_network::layer::Layer;
 use spiking_neural_network::neuron::Neuron;
 
 fn create_layer() -> Layer<LifNeuron, Conf> {
-    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4);
+    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4,0.05);
     let neurons = vec![n; 3];
 
     let weights = vec![
@@ -37,7 +37,7 @@ fn verify_get_number_neurons() {
 fn verify_get_neurons() {
     let l = create_layer();
 
-    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4);
+    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4,0.05);
     let neurons = vec![n; 3];
 
     assert_eq!(l.get_neurons(), neurons);
