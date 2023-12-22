@@ -15,7 +15,6 @@ pub trait Neuron: Send {
 
     /** initialize all data structures of Neuron */
     fn init(&mut self);
-    fn modify_bits(&self, vec_byte: &mut Vec<u8>, position: u8, val:u8);
     fn get_tau(&self) -> f64;
     fn get_v_reset(&self) -> f64;
     fn get_v_rest(&self) -> f64;

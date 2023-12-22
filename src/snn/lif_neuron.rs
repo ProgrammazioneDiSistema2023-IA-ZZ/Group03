@@ -106,6 +106,9 @@ impl Neuron for LifNeuron {
         if diff_time != 0.0 && self.tau != 0.0 {
             exponent = -(diff_time*self.dt / self.tau);
         }
+        if self.v_mem < self.v_rest {
+            self.v_mem = self.v_rest;
+        }
         self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + extra_sum;
         self.ts = t;
         return if self.v_mem > self.v_th {
@@ -121,16 +124,4 @@ impl Neuron for LifNeuron {
         self.ts = 0u64;
     }
 
-    fn modify_bits(&self, vec_byte:&mut Vec<u8>, position: u8, val:u8) {
-        let rest_position =8- (position%8);//verifica architettura
-         for (pos,byte) in vec_byte.iter_mut().rev().enumerate() {
-             if (position/8) == pos as u8 {
-                 let maschera = 1_u8.checked_shl(rest_position as u32) ;
-                 match maschera {
-                     None => {}
-                     Some(value) => { *byte = (*byte & !value) | (val << rest_position); }
-                 }
-             }
-         }
-    }
 }
