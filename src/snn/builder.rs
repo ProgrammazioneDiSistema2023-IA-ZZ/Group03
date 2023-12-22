@@ -3,7 +3,6 @@ use crate::neuron::Neuron;
 use crate::snn::layer::Layer;
 use crate::snn::network::SNN;
 use crate::configuration::Configuration;
-use crate::failure::{Conf, Failure, Stuck_at_0, Stuck_at_1, Transient_bit_flip};
 
 /**
 Object containing the configuration parameters describing the SNN architecture

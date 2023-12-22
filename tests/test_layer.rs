@@ -1,12 +1,10 @@
-use spiking_neural_network::configuration::Configuration;
-use spiking_neural_network::failure::{Conf, Failure, Stuck_at_0, Stuck_at_1, Transient_bit_flip};
-
+use spiking_neural_network::failure::{Conf, Failure, StuckAt0, StuckAt1, TransientBitFlip};
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::layer::{Layer, modify_bits};
 use spiking_neural_network::neuron::Neuron;
 
-fn create_layer() -> Layer<LifNeuron, Conf> {
-    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4,0.05);
+fn create_layer(configuration: Conf) -> Layer<LifNeuron, Conf> {
+    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4, 0.05);
     let neurons = vec![n; 3];
 
     let weights = vec![
@@ -20,24 +18,23 @@ fn create_layer() -> Layer<LifNeuron, Conf> {
         vec![-0.05, 0.0, -0.1],
         vec![-0.15, -0.1, 0.0],
     ];
-    let failure = Failure::StuckAt0(Stuck_at_0::new(65));
-    let configuration = Conf::new(vec!["intra_weights".to_string()],failure);
-    let l = Layer::new(neurons, weights, intra_weights,configuration);
+
+    let l = Layer::new(neurons, weights, intra_weights, configuration);
     l
 }
 
 #[test]
 fn verify_get_number_neurons() {
-    let l = create_layer();
+    let l = create_layer(Conf::new(vec![], Failure::None));
 
     assert_eq!(l.get_number_neurons(), 3);
 }
 
 #[test]
 fn verify_get_neurons() {
-    let l = create_layer();
+    let l = create_layer(Conf::new(vec![], Failure::None));
 
-    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4,0.05);
+    let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4, 0.05);
     let neurons = vec![n; 3];
 
     assert_eq!(l.get_neurons(), neurons);
@@ -52,7 +49,7 @@ fn verify_get_weights() {
         vec![0.5, 0.6],
     ];
 
-    let l = create_layer();
+    let l = create_layer(Conf::new(vec![], Failure::None));
 
     assert_eq!(l.get_weights(), weights);
     assert_eq!(l.get_weights().len(), 3);
@@ -60,7 +57,7 @@ fn verify_get_weights() {
 
 #[test]
 fn verify_get_intra_weights() {
-    let l = create_layer();
+    let l = create_layer(Conf::new(vec![], Failure::None));
 
     let intra_weights = vec![
         vec![0.0, -0.1, -0.15],
@@ -73,83 +70,142 @@ fn verify_get_intra_weights() {
 }
 
 #[test]
-fn verify_modification_bit_v_th() {
-    let l = create_layer();
-    for mut lif in l.get_neurons() {
-        if l.get_configuration().get_vec_components().contains(&"v_th".to_string())  {
-            let fail = l.get_configuration().get_failure();
-            match fail {
-                Failure::StuckAt0(stuck_at_0) => {
-                    let mut vec_byte_original: Vec<u8> = lif.get_v_th().to_ne_bytes().iter().cloned().collect();
-                    modify_bits(&mut vec_byte_original,stuck_at_0.get_position() as u8 %64u8, stuck_at_0.get_valore());
-                    lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                    assert_eq!(lif.get_v_th(), 0.65);//usare posizione 13
-                }
-                Failure::StuckAt1(stuck_at_1) => {
-                    let mut vec_byte_original: Vec<u8> = lif.get_v_th().to_ne_bytes().iter().cloned().collect();
-                    modify_bits(&mut vec_byte_original,stuck_at_1.get_position() as u8 %64u8,stuck_at_1.get_valore());
-                    lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                    assert_eq!(lif.get_v_th(), 0.9625);//usare posizione 15
-                }
-                Failure::TransientBitFlip(mut transient_bit) => {
-                    if !transient_bit.get_bit_changed() {
-                        let mut vec_byte_original:Vec<u8> = lif.get_v_th().to_ne_bytes().iter().cloned().collect();
-                        let byte_original = vec_byte_original.get(transient_bit.get_position() as usize / 8).cloned().unwrap_or(0u8);
-                        let valor_bit = (byte_original >> (transient_bit.get_position() % 8)) & 1;
-                        modify_bits(&mut vec_byte_original, transient_bit.get_position()  as u8 %64u8, valor_bit);
-                        transient_bit.set_bit_changed(true);
-                        lif.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                        assert_eq!(lif.get_v_th(), 0.9625);//usare posizione 15
-                    }
-                }
-                Failure::None => {}
-            }
+fn verify_modification_bit_v_th_stuck0() {
+    let failure = Failure::StuckAt0(StuckAt0::new(13));
+    let configuration = Conf::new(vec!["v_th".to_string()], failure);
+    let l = create_layer(configuration.clone());
+
+    match configuration.get_failure() {
+        Failure::StuckAt0(s) => {
+            let mut neuron = l.get_neurons();
+            let n = neuron.get_mut(0).unwrap();
+            let mut vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
+            modify_bits(&mut vec_byte_original, s.get_position() as u8 % 64u8, s.get_valore());
+            n.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+            assert_eq!(n.get_v_th(), 0.65);//use position 13
         }
+        _ => {}
     }
 }
 
 #[test]
-fn verify_modify_bit_intra_weights() {
-    let mut l = create_layer();
-    for mut lif in l.get_neurons() {
-        if l.get_configuration().get_vec_components().contains(&"intra_weights".to_string())  {
-            let fail = l.get_configuration().get_failure();
-            match fail {
-                Failure::StuckAt0(stuck_at_0) => {
-                    let mut matrice_original = l.get_intra_weights();
-                    let riga:usize = ((stuck_at_0.get_position()/64) / matrice_original.len() as u32) as usize;
-                    let colonna:usize = ((stuck_at_0.get_position()/64) % matrice_original.len() as u32) as usize;
-                    let mut vec_byte = matrice_original[riga][colonna].to_ne_bytes().iter().cloned().collect();
-                    modify_bits(&mut vec_byte, stuck_at_0.get_position() as u8 %64u8, stuck_at_0.get_valore());
-                    matrice_original[riga][colonna] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
-                    l.set_intra_weights(matrice_original);
-                    assert_eq!(l.get_intra_weights(), vec![
-                        vec![0.0, 0.1, -0.15],
-                        vec![-0.05, 0.0, -0.1],
-                        vec![-0.15, -0.1, 0.0],
-                    ]);//usare posizione 65
-                }
-                Failure::StuckAt1(stuck_at_1) => {
-                    let mut matrice_original = l.get_intra_weights();
-                    let riga:usize = ((stuck_at_1.get_position()/64) / matrice_original.len() as u32) as usize;
-                    let colonna:usize = ((stuck_at_1.get_position()/64) % matrice_original.len() as u32) as usize;
-                    let mut vec_byte = matrice_original[riga][colonna].to_ne_bytes().iter().cloned().collect();
-                    modify_bits(&mut vec_byte, stuck_at_1.get_position() as u8 %64u8, stuck_at_1.get_valore());
-                    matrice_original[riga][colonna] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
-                    l.set_intra_weights(matrice_original);
-                    assert_eq!(l.get_intra_weights(), vec![
-                        vec![0.0, -1.797693134862316e307, -0.15],
-                        vec![-0.05, 0.0, -0.1],
-                        vec![-0.15, -0.1, 0.0],
-                    ]);//usare posizione 66
-                }
-                Failure::TransientBitFlip(mut transient_bit) => {
-                    if !transient_bit.get_bit_changed() {
+fn verify_modification_bit_v_th_stuck1() {
+    let failure = Failure::StuckAt1(StuckAt1::new(15));
+    let configuration = Conf::new(vec!["v_th".to_string()], failure);
+    let l = create_layer(configuration.clone());
 
-                    }
-                }
-                Failure::None => {}
+    match configuration.get_failure() {
+        Failure::StuckAt1(s) => {
+            let mut neuron = l.get_neurons();
+            let n = neuron.get_mut(0).unwrap();
+            let mut vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
+            modify_bits(&mut vec_byte_original, s.get_position() as u8 % 64u8, s.get_valore());
+            n.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+            assert_eq!(n.get_v_th(), 0.9625);//use position 15
+        }
+        _ => {}
+    }
+}
+
+#[test]
+fn verify_modification_bit_v_th_transient() {
+    let failure = Failure::TransientBitFlip(TransientBitFlip::new(15));
+    let configuration = Conf::new(vec!["v_th".to_string()], failure);
+    let l = create_layer(configuration.clone());
+
+    match configuration.get_failure() {
+        Failure::TransientBitFlip(mut transient_bit) => {
+            if !transient_bit.get_bit_changed() {
+                let mut neuron = l.get_neurons();
+                let n = neuron.get_mut(0).unwrap();
+                let mut vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
+                let byte_original = vec_byte_original.get(transient_bit.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                let valor_bit = (byte_original >> (transient_bit.get_position() % 8)) & 1;
+                modify_bits(&mut vec_byte_original, transient_bit.get_position() as u8 % 64u8, valor_bit);
+                transient_bit.set_bit_changed(true);
+                n.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                assert_eq!(n.get_v_th(), 0.9625);//use position 15
             }
         }
+        _ => {}
+    }
+}
+
+#[test]
+fn verify_modify_bit_intra_weights_stuck0() {
+    let failure = Failure::StuckAt0(StuckAt0::new(65));
+    let configuration = Conf::new(vec!["intra_weights".to_string()], failure);
+    let mut l = create_layer(configuration.clone());
+    match configuration.get_failure() {
+        Failure::StuckAt0(s) => {
+            let mut matrix = l.get_intra_weights();
+            let i = ((s.get_position() / 64) / matrix.len() as u32) as usize;
+            let j = ((s.get_position() / 64) % matrix.len() as u32) as usize;
+            let mut vec_byte = matrix[i][j].to_ne_bytes().iter().cloned().collect();
+            modify_bits(&mut vec_byte, s.get_position() as u8 % 64u8, s.get_valore());
+            matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
+            l.set_intra_weights(matrix);
+            assert_eq!(l.get_intra_weights(), vec![
+                vec![0.0, 0.1, -0.15],
+                vec![-0.05, 0.0, -0.1],
+                vec![-0.15, -0.1, 0.0],
+            ]);//usare posizione 65
+        }
+        _ => {}
+    }
+}
+
+#[test]
+fn verify_modify_bit_intra_weights_stuck1() {
+    let failure = Failure::StuckAt1(StuckAt1::new(66));
+    let configuration = Conf::new(vec!["intra_weights".to_string()], failure);
+    let mut l = create_layer(configuration.clone());
+    match configuration.get_failure() {
+        Failure::StuckAt1(s) => {
+            let mut matrix = l.get_intra_weights();
+            let i = ((s.get_position() / 64) / matrix.len() as u32) as usize;
+            let j = ((s.get_position() / 64) % matrix.len() as u32) as usize;
+            let mut vec_byte = matrix[i][j].to_ne_bytes().iter().cloned().collect();
+            modify_bits(&mut vec_byte, s.get_position() as u8 % 64u8, s.get_valore());
+            matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
+            l.set_intra_weights(matrix);
+            assert_eq!(l.get_intra_weights(), vec![
+                vec![0.0, -1.797693134862316e307, -0.15],
+                vec![-0.05, 0.0, -0.1],
+                vec![-0.15, -0.1, 0.0],
+            ]);//use position 66
+        }
+        _ => {}
+    }
+}
+
+#[test]
+fn verify_modify_bit_intra_weights_transient() {
+    let failure = Failure::TransientBitFlip(TransientBitFlip::new(65));
+    let configuration = Conf::new(vec!["intra_weights".to_string()], failure);
+    let mut l = create_layer(configuration.clone());
+    match configuration.get_failure() {
+        Failure::TransientBitFlip(mut t) => {
+            if !t.get_bit_changed() {
+                let mut matrix = l.get_intra_weights();
+                let i = ((t.get_position() / 64) / matrix.len() as u32) as usize;
+                let j = ((t.get_position() / 64) % matrix.len() as u32) as usize;
+                let mut vec_byte: Vec<_> = matrix[i][j].to_ne_bytes().iter().cloned().collect();
+
+                let byte_original: u8 = vec_byte.get(t.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                let value_bit = (byte_original >> (t.get_position() % 8)) & 1;
+                modify_bits(&mut vec_byte, t.get_position() as u8 % 64u8, value_bit);
+                t.set_bit_changed(true);
+
+                matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
+                l.set_intra_weights(matrix);
+                assert_eq!(l.get_intra_weights(), vec![
+                    vec![0.0, 0.1, -0.15],
+                    vec![-0.05, 0.0, -0.1],
+                    vec![-0.15, -0.1, 0.0],
+                ]);//use position 65
+            }
+        }
+        _ => {}
     }
 }

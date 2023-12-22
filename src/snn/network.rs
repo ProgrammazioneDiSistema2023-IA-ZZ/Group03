@@ -8,16 +8,17 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 use std::thread::JoinHandle;
+
 #[derive(Debug, Clone)]
 pub struct SNN<N: Neuron + Clone + 'static, R: Configuration + Clone + Send + 'static> {
-    layers: Vec<Arc<Mutex<Layer<N, R>>>>
+    layers: Vec<Arc<Mutex<Layer<N, R>>>>,
 }
 
 impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
     pub fn new(layers: Vec<Arc<Mutex<Layer<N, R>>>>) -> Self {
         Self { layers }
     }
-    
+
     pub fn get_number_layers(&self) -> usize {
         self.layers.len()
     }
@@ -34,7 +35,7 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
 
     pub fn get_layers(&self) -> Vec<Layer<N, R>> {
         //self.layers.iter().map(|layer| layer.lock().unwrap().clone()).collect()
-        self.layers.iter().map(|layer| layer.lock().unwrap().clone() ).collect()
+        self.layers.iter().map(|layer| layer.lock().unwrap().clone()).collect()
     }
 
     /**
@@ -59,8 +60,8 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
         let output_spike_events = self.process_events(input_spike_events);
 
         // * decode output into array shape *
-        let decoded_output =  SNN::<N, R>::decode_spikes(output_layer_dimension,
-                                                         output_spike_events, spikes_duration);
+        let decoded_output = SNN::<N, R>::decode_spikes(output_layer_dimension,
+                                                        output_spike_events, spikes_duration);
 
         decoded_output
     }
@@ -95,7 +96,7 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
         for t in 0..spikes_duration {
             let mut t_spikes = Vec::<u8>::new();
             /* retrieve the input spikes for each neuron */
-            for in_neuron_index in 0..spikes.len(){
+            for in_neuron_index in 0..spikes.len() {
                 /* check for 0 or 1 only */
                 if spikes[in_neuron_index][t] != 0 && spikes[in_neuron_index][t] != 1 {
                     panic!("Error: input spike must be 0 or 1 at for N={} at t={}", in_neuron_index, t);
@@ -112,7 +113,7 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
     This function decodes a Vec of SpikeEvents and returns an output spikes matrix of 0/1
      */
     fn decode_spikes(output_layer_dimension: usize, spikes: Vec<SpikeEvent>, spikes_duration: usize) -> Vec<Vec<u8>> {
-        let mut raw_spikes  = vec![vec![0; spikes_duration]; output_layer_dimension];
+        let mut raw_spikes = vec![vec![0; spikes_duration]; output_layer_dimension];
         for spike_event in spikes {
             for (out_neuron_index, spike) in spike_event.get_spikes().into_iter().enumerate() {
                 raw_spikes[out_neuron_index][spike_event.get_ts() as usize] = spike;
@@ -177,9 +178,10 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
         output_events
     }
 }
-impl<'a, N: Neuron + Clone + 'static, R: Configuration + Clone + Send + 'static> IntoIterator for &'a mut SNN<N,R> {
-    type Item = &'a mut Arc<Mutex<Layer<N,R>>>;
-    type IntoIter = IterMut<'a, Arc<Mutex<Layer<N,R>>>>;
+
+impl<'a, N: Neuron + Clone + 'static, R: Configuration + Clone + Send + 'static> IntoIterator for &'a mut SNN<N, R> {
+    type Item = &'a mut Arc<Mutex<Layer<N, R>>>;
+    type IntoIter = IterMut<'a, Arc<Mutex<Layer<N, R>>>>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.layers.iter_mut()

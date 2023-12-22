@@ -1,9 +1,8 @@
-use std::io::Write;
 use std::sync::mpsc::{Receiver, Sender};
 use crate::snn::neuron::Neuron;
 use crate::snn::spike_event::SpikeEvent;
 use crate::snn::configuration::Configuration;
-use crate::failure::{Failure, Stuck_at_1, Transient_bit_flip};
+use crate::failure::{Failure};
 
 #[derive(Debug)]
 pub struct Layer<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'static> {
@@ -52,19 +51,11 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     pub fn set_intra_weights(&mut self, val: Vec<Vec<f64>>) { self.intra_weights = val}
 
-    fn modify_v_mem(&mut self, index: usize) {
-        for index2 in 0..self.neurons.len(){
-            if index2 != index-1 {
-                let val = self.intra_weights.get(index-1).unwrap().get(index2).unwrap().clone();
-                self.neurons[index2].decrement_v_mem(val);
-            }
-        }
-    }
-    fn continue_gen_spike(&mut self, input_spike_event: &SpikeEvent, instant:u64, output_spikes: &mut Vec<u8>,
-                          at_least_one_spike: &mut bool, index_outside: &mut usize) {
-        for (index, neuron) in self.neurons.iter_mut().skip(*index_outside).enumerate() {
-            let mut extra_weighted_sum = 0f64;
+    fn continue_gen_spike(&mut self, input_spike_event: &SpikeEvent, instant:u64, output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
+        for (index, neuron) in self.neurons.iter_mut().enumerate() {
+
             /* compute extra weighted sum */
+            let mut extra_weighted_sum = 0f64;
             let events = input_spike_event.get_spikes();
 
             if self.configuration.get_len_vec_components() > 0 {
@@ -108,46 +99,57 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     Failure::None => {}
                 }
             }
-            let extra_weights_pairs = self.weights[index + *index_outside].iter().zip(events.iter());
+            let extra_weights_pairs = self.weights[index].iter().zip(events.iter());
 
             for (weight, spike) in extra_weights_pairs {
                 if *spike != 0 {
                     extra_weighted_sum += *weight;
                 }
             }
-            let neuron_spike = neuron.calculate_v_mem(instant, extra_weighted_sum);
+
+            /* compute intra weighted sum */
+            let mut intra_weighted_sum = 0f64;
+            let intra_weights_pairs = self.intra_weights[index].iter().zip(events.iter());
+
+            for (i, (weight, spike)) in intra_weights_pairs.enumerate() {
+                /* skip the reflexive link */
+                if i != index && *spike != 0 {
+                    intra_weighted_sum += *weight;
+                }
+            }
+
+            let neuron_spike = neuron.calculate_v_mem(instant, extra_weighted_sum + intra_weighted_sum);
             output_spikes.push(neuron_spike);
             if neuron_spike == 1u8 {
                 *at_least_one_spike = true;
-                *index_outside = index+1 + *index_outside;
-                break;
             }
         }
-        *index_outside = self.neurons.len() ;
     }
     pub fn process(&mut self, layer_input_rc: Receiver<SpikeEvent>, layer_output_tx: Sender<SpikeEvent>) {
         /* initialize data structures, so that the SNN can be reused */
         self.init();
         /* listen to SpikeEvent(s) coming from the previous layer and process them */
         while let Ok(input_spike_event) = layer_input_rc.recv() {
-            let instant = input_spike_event.get_ts();    /* time instant of the input spike */
-            let mut output_spikes = Vec::<u8>::with_capacity(self.neurons.len());
-            let mut at_least_one_spike = false;
-            let mut index_outside:usize = 0;
 
-            while index_outside < self.neurons.len() {
-                self.continue_gen_spike(&input_spike_event, instant, output_spikes.by_ref(),
-                                        &mut at_least_one_spike, &mut index_outside);
-                if index_outside> 0 && index_outside < self.neurons.len() {
-                    self.modify_v_mem(index_outside);
-                }
-            }
+            /* time instant of the input spike */
+            let instant = input_spike_event.get_ts();
+
+            /*flag to manage not firing layer*/
+            let mut at_least_one_spike = false;
+
+            let mut output_spikes = Vec::<u8>::with_capacity(self.neurons.len());
+
+            /*function that compute v_mem of neuron considering all input spikes*/
+            self.continue_gen_spike(&input_spike_event, instant, &mut output_spikes, &mut at_least_one_spike);
+
             /* save output spikes for later */
             self.prev_spikes = output_spikes.clone();
+
             /* check if at least one neuron fired - if not, not send any spike */
             if !at_least_one_spike {
                 continue;
             }
+
             /* at least one neuron fired -> send output spikes to the next layer */
             let output_spike_event = SpikeEvent::new(instant, output_spikes);
 

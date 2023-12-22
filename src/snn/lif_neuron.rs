@@ -100,7 +100,7 @@ impl Neuron for LifNeuron {
                  self.get_v_th(), self.get_v_rest(), self.get_v_reset(), self.get_tau(),
                  self.get_v_mem(), self.get_ts() );
     }
-    fn calculate_v_mem(&mut self, t: u64, extra_sum: f64) -> u8 {
+    fn calculate_v_mem(&mut self, t: u64, extra_intra_sum: f64) -> u8 {
         let diff_time = (t - self.ts) as f64;
         let mut exponent=0.0;
         if diff_time != 0.0 && self.tau != 0.0 {
@@ -109,7 +109,7 @@ impl Neuron for LifNeuron {
         if self.v_mem < self.v_rest {
             self.v_mem = self.v_rest;
         }
-        self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + extra_sum;
+        self.v_mem = self.v_rest + (self.v_mem - self.v_rest) * E.powf(exponent) + extra_intra_sum;
         self.ts = t;
         return if self.v_mem > self.v_th {
             self.v_mem = self.v_reset;
