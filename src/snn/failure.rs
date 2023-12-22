@@ -17,19 +17,19 @@ pub enum Failure {
 #[derive(Debug, Clone, PartialEq)]
 pub struct StuckAt1 {
     position: u32,
-    valore: u8,
+    value: u8,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct StuckAt0 {
     position: u32,
-    valore: u8,
+    value: u8,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransientBitFlip {
     position: u32,
-    bit_gia_cambiato: bool,
+    bit_changed: bool,
 }
 
 impl Conf {
@@ -41,22 +41,22 @@ impl Conf {
 }
 
 impl StuckAt0 {
-    pub fn new(position: u32) -> Self { Self { position, valore: 0 } }
+    pub fn new(position: u32) -> Self { Self { position, value: 0 } }
     pub fn get_position(&self) -> u32 { self.position }
-    pub fn get_valore(&self) -> u8 { self.valore }
+    pub fn get_value(&self) -> u8 { self.value }
 }
 
 impl StuckAt1 {
-    pub fn new(position: u32) -> Self { Self { position, valore: 1 } }
+    pub fn new(position: u32) -> Self { Self { position, value: 1 } }
     pub fn get_position(&self) -> u32 { self.position }
-    pub fn get_valore(&self) -> u8 { self.valore }
+    pub fn get_value(&self) -> u8 { self.value }
 }
 
 impl TransientBitFlip {
-    pub fn new(position: u32) -> Self { Self { position, bit_gia_cambiato: false } }
+    pub fn new(position: u32) -> Self { Self { position, bit_changed: false } }
     pub fn get_position(&self) -> u32 { self.position }
-    pub fn get_bit_changed(&self) -> bool { self.bit_gia_cambiato }
-    pub fn set_bit_changed(&mut self, val: bool) { self.bit_gia_cambiato = val }
+    pub fn get_bit_changed(&self) -> bool { self.bit_changed }
+    pub fn set_bit_changed(&mut self, val: bool) { self.bit_changed = val }
 }
 
 impl Configuration for Conf {

@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::layer::Layer;
 use spiking_neural_network::network::SNN;
-use spiking_neural_network::failure::{Conf, Failure, StuckAt0, StuckAt1, TransientBitFlip};
+use spiking_neural_network::failure::{Conf, Failure, StuckAt0};
 
 fn create_layer() -> Layer<LifNeuron, Conf> {
     let n = LifNeuron::new(0.76, 0.33, 0.14, 0.4, 0.05);

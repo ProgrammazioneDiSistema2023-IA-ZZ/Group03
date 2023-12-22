@@ -2,7 +2,6 @@ use crate::neuron::Neuron;
 use crate::snn::layer::Layer;
 use crate::spike_event::SpikeEvent;
 use crate::configuration::Configuration;
-
 use std::slice::IterMut;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;

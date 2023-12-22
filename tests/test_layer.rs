@@ -80,7 +80,7 @@ fn verify_modification_bit_v_th_stuck0() {
             let mut neuron = l.get_neurons();
             let n = neuron.get_mut(0).unwrap();
             let mut vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
-            modify_bits(&mut vec_byte_original, s.get_position() as u8 % 64u8, s.get_valore());
+            modify_bits(&mut vec_byte_original, s.get_position() as u8 % 64u8, s.get_value());
             n.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
             assert_eq!(n.get_v_th(), 0.65);//use position 13
         }
@@ -99,7 +99,7 @@ fn verify_modification_bit_v_th_stuck1() {
             let mut neuron = l.get_neurons();
             let n = neuron.get_mut(0).unwrap();
             let mut vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
-            modify_bits(&mut vec_byte_original, s.get_position() as u8 % 64u8, s.get_valore());
+            modify_bits(&mut vec_byte_original, s.get_position() as u8 % 64u8, s.get_value());
             n.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
             assert_eq!(n.get_v_th(), 0.9625);//use position 15
         }
@@ -142,14 +142,14 @@ fn verify_modify_bit_intra_weights_stuck0() {
             let i = ((s.get_position() / 64) / matrix.len() as u32) as usize;
             let j = ((s.get_position() / 64) % matrix.len() as u32) as usize;
             let mut vec_byte = matrix[i][j].to_ne_bytes().iter().cloned().collect();
-            modify_bits(&mut vec_byte, s.get_position() as u8 % 64u8, s.get_valore());
+            modify_bits(&mut vec_byte, s.get_position() as u8 % 64u8, s.get_value());
             matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
             l.set_intra_weights(matrix);
             assert_eq!(l.get_intra_weights(), vec![
                 vec![0.0, 0.1, -0.15],
                 vec![-0.05, 0.0, -0.1],
                 vec![-0.15, -0.1, 0.0],
-            ]);//usare posizione 65
+            ]);//use position 65
         }
         _ => {}
     }
@@ -166,7 +166,7 @@ fn verify_modify_bit_intra_weights_stuck1() {
             let i = ((s.get_position() / 64) / matrix.len() as u32) as usize;
             let j = ((s.get_position() / 64) % matrix.len() as u32) as usize;
             let mut vec_byte = matrix[i][j].to_ne_bytes().iter().cloned().collect();
-            modify_bits(&mut vec_byte, s.get_position() as u8 % 64u8, s.get_valore());
+            modify_bits(&mut vec_byte, s.get_position() as u8 % 64u8, s.get_value());
             matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
             l.set_intra_weights(matrix);
             assert_eq!(l.get_intra_weights(), vec![
