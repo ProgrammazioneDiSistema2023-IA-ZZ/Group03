@@ -54,13 +54,12 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     fn generate_fault(&mut self) {
         let elements = self.configuration.get_vec_components();
+        let mut rng = rand::thread_rng();
+        let random_index = rng.gen_range(0..self.neurons.len());
 
         match self.configuration.get_failure() {
             Failure::StuckAt0(stuck_at_0) => {
                 if elements.contains(&"v_th".to_string()) {
-                    let mut rng = rand::thread_rng();
-                    let random_index = rng.gen_range(0..self.neurons.len());
-
                     let neuron = self.neurons.get_mut(random_index).unwrap();
                     let mut vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
                     modify_bits(&mut vec_byte_original, stuck_at_0.get_position() as u8 % 64u8, stuck_at_0.get_value());
@@ -78,7 +77,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
             }
             Failure::StuckAt1(stuck_at_1) => {
                 if elements.contains(&"v_mem".to_string()) {
-                    let neuron = self.neurons.get_mut(0).unwrap();
+                    let neuron = self.neurons.get_mut(random_index).unwrap();
                     let mut vec_byte_original = neuron.get_v_mem().to_ne_bytes().to_vec();
                     modify_bits(&mut vec_byte_original, stuck_at_1.get_position() as u8 % 64u8, stuck_at_1.get_value());
                     neuron.set_v_mem(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
@@ -86,7 +85,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
             }
             Failure::TransientBitFlip(mut transient_bit_flip) => {
                 if !transient_bit_flip.get_bit_changed() && elements.contains(&"v_th".to_string()) {
-                    let neuron = self.neurons.get_mut(0).unwrap();
+                    let neuron = self.neurons.get_mut(random_index).unwrap();
                     let mut vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
                     let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
                     let value_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
