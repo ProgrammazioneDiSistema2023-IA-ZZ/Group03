@@ -52,63 +52,66 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     pub fn set_intra_weights(&mut self, val: Vec<Vec<f64>>) { self.intra_weights = val }
 
-    fn generate_fault(&mut self) {
-        let elements = self.configuration.get_vec_components();
-        let mut rng = rand::thread_rng();
-        let random_index = rng.gen_range(0..self.neurons.len());
+    fn generate_faults(&mut self) {
+        /* If there is at least one component to fail, repeat for each component N-times the faults */
+        for _ in 0..self.configuration.get_len_vec_components() {
+            for _ in 0..self.configuration.get_numbers_of_fault() {
 
-        match self.configuration.get_failure() {
-            Failure::StuckAt0(stuck_at_0) => {
-                if elements.contains(&"v_th".to_string()) {
-                    let neuron = self.neurons.get_mut(random_index).unwrap();
-                    let mut vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
-                    modify_bits(&mut vec_byte_original, stuck_at_0.get_position() as u8 % 64u8, stuck_at_0.get_value());
-                    neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                }
-                if elements.contains(&"intra_weights".to_string()) {
-                    let mut matrix = self.intra_weights.clone();
-                    let i = ((stuck_at_0.get_position() / 64) / matrix.len() as u32) as usize;
-                    let j = ((stuck_at_0.get_position() / 64) % matrix.len() as u32) as usize;
-                    let mut vec_byte = matrix[i][j].to_ne_bytes().to_vec();
-                    modify_bits(&mut vec_byte, stuck_at_0.get_position() as u8 % 64u8, stuck_at_0.get_value());
-                    matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
-                    self.intra_weights = matrix;
-                }
-            }
-            Failure::StuckAt1(stuck_at_1) => {
-                if elements.contains(&"v_mem".to_string()) {
-                    let neuron = self.neurons.get_mut(random_index).unwrap();
-                    let mut vec_byte_original = neuron.get_v_mem().to_ne_bytes().to_vec();
-                    modify_bits(&mut vec_byte_original, stuck_at_1.get_position() as u8 % 64u8, stuck_at_1.get_value());
-                    neuron.set_v_mem(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                }
-            }
-            Failure::TransientBitFlip(mut transient_bit_flip) => {
-                if !transient_bit_flip.get_bit_changed() && elements.contains(&"v_th".to_string()) {
-                    let neuron = self.neurons.get_mut(random_index).unwrap();
-                    let mut vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
-                    let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
-                    let value_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
-                    modify_bits(&mut vec_byte_original, transient_bit_flip.get_position() as u8 % 64u8, value_bit);
-                    transient_bit_flip.set_bit_changed(true);
-                    neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                }
-            }
+                let elements = self.configuration.get_vec_components();
+                let mut rng = rand::thread_rng();
+                let random_index = rng.gen_range(0..self.neurons.len());
 
-            Failure::None => {}
+                /* Match the type of failure -> StuckAt0 / StuckAt1 / TransientBitFlip */
+                match self.configuration.get_failure() {
+                    Failure::StuckAt0(stuck_at_0) => {
+                        if elements.contains(&"v_th".to_string()) {
+                            let neuron = self.neurons.get_mut(random_index).unwrap();
+                            let mut vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
+                            modify_bits(&mut vec_byte_original, stuck_at_0.get_position() as u8 % 64u8, stuck_at_0.get_value());
+                            neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        }
+                        if elements.contains(&"intra_weights".to_string()) {
+                            let mut matrix = self.intra_weights.clone();
+                            let i = ((stuck_at_0.get_position() / 64) / matrix.len() as u32) as usize;
+                            let j = ((stuck_at_0.get_position() / 64) % matrix.len() as u32) as usize;
+                            let mut vec_byte = matrix[i][j].to_ne_bytes().to_vec();
+                            modify_bits(&mut vec_byte, stuck_at_0.get_position() as u8 % 64u8, stuck_at_0.get_value());
+                            matrix[i][j] = f64::from_ne_bytes(vec_byte.as_slice().try_into().unwrap());
+                            self.intra_weights = matrix;
+                        }
+                    }
+                    Failure::StuckAt1(stuck_at_1) => {
+                        if elements.contains(&"v_mem".to_string()) {
+                            let neuron = self.neurons.get_mut(random_index).unwrap();
+                            let mut vec_byte_original = neuron.get_v_mem().to_ne_bytes().to_vec();
+                            modify_bits(&mut vec_byte_original, stuck_at_1.get_position() as u8 % 64u8, stuck_at_1.get_value());
+                            neuron.set_v_mem(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        }
+                    }
+                    Failure::TransientBitFlip(mut transient_bit_flip) => {
+                        if !transient_bit_flip.get_bit_changed() && elements.contains(&"v_th".to_string()) {
+                            let neuron = self.neurons.get_mut(random_index).unwrap();
+                            let mut vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
+                            let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                            let value_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
+                            modify_bits(&mut vec_byte_original, transient_bit_flip.get_position() as u8 % 64u8, value_bit);
+                            transient_bit_flip.set_bit_changed(true);
+                            neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
+                        }
+                    }
+                    Failure::None => {}
+                }
+            }
         }
     }
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64,
                       output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
-        /* Generate N-occurrences of faults according to the configuration */
-        if self.configuration.get_len_vec_components() > 0 {
-            for _ in 0..self.configuration.get_numbers_of_fault() {
-                /* Forse meglio mettere il for e trasformarla in generate_faults() ??*/
-                self.generate_fault();
-            }
-        }
 
+        /* Generate FAULTS according to the configuration */
+        self.generate_faults();
+
+        /* For each neuron compute the sums of intra weights, extra weights and v_mem*/
         for (index, neuron) in self.neurons.iter_mut().enumerate() {
             let events = input_spike_event.get_spikes();
 
