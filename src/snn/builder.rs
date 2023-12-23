@@ -160,13 +160,13 @@ impl<N: Neuron + Clone, R: Configuration + Clone> SnnBuilder<N, R> {
         }
 
         let mut layers: Vec<Arc<Mutex<Layer<N, R>>>> = Vec::new();
-        let mut neurons_iter = self.params.neurons.into_iter();
+        let neurons_iter = self.params.neurons.into_iter();
         let mut extra_weights_iter = self.params.extra_weights.into_iter();
         let mut intra_weights_iter = self.params.intra_weights.into_iter();
         let mut configuration_iter = self.params.configuration.into_iter();
+
         /* retrieve the Neurons, the extra weights and the intra weights for each layer */
         for layer_neurons in neurons_iter {
-            //while let Some(layer_neurons) = neurons_iter.next() {
             let layer_extra_weights = extra_weights_iter.next().unwrap();
             let layer_intra_weights = intra_weights_iter.next().unwrap();
             let configuration = configuration_iter.next().unwrap().clone();

@@ -59,10 +59,7 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
         let output_spike_events = self.process_events(input_spike_events);
 
         // * decode output into array shape *
-        let decoded_output = SNN::<N, R>::decode_spikes(output_layer_dimension,
-                                                        output_spike_events, spikes_duration);
-
-        decoded_output
+        SNN::<N, R>::decode_spikes(output_layer_dimension, output_spike_events, spikes_duration)
     }
 
     /**
@@ -130,7 +127,6 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
 
         /* create input TX and output RC for each layer and spawn layers' threads */
         for layer_ref in self {
-
             /* create channel to feed the next layer */
             let (layer_tx, next_layer_rc) = channel::<SpikeEvent>();
 
