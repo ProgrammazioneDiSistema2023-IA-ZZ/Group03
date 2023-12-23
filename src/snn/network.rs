@@ -95,12 +95,12 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
         for t in 0..spikes_duration {
             let mut t_spikes = Vec::<u8>::new();
             /* retrieve the input spikes for each neuron */
-            for in_neuron_index in 0..spikes.len() {
+            for (in_neuron_index, spike) in spikes.iter().enumerate() {
                 /* check for 0 or 1 only */
-                if spikes[in_neuron_index][t] != 0 && spikes[in_neuron_index][t] != 1 {
+                if spike[t] != 0 && spike[t] != 1 {
                     panic!("Error: input spike must be 0 or 1 at for N={} at t={}", in_neuron_index, t);
                 }
-                t_spikes.push(spikes[in_neuron_index][t]);
+                t_spikes.push(spike[t]);
             }
             let t_spike_event = SpikeEvent::new(t as u64, t_spikes);
             spike_events.push(t_spike_event);

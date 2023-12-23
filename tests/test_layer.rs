@@ -25,14 +25,14 @@ fn create_layer(configuration: Conf) -> Layer<LifNeuron, Conf> {
 
 #[test]
 fn verify_get_number_neurons() {
-    let l = create_layer(Conf::new(vec![], Failure::None));
+    let l = create_layer(Conf::new(vec![], Failure::None, 0));
 
     assert_eq!(l.get_number_neurons(), 3);
 }
 
 #[test]
 fn verify_get_neurons() {
-    let l = create_layer(Conf::new(vec![], Failure::None));
+    let l = create_layer(Conf::new(vec![], Failure::None, 0));
 
     let n = LifNeuron::new(0.9, 0.33, 0.14, 0.4, 0.05);
     let neurons = vec![n; 3];
@@ -49,7 +49,7 @@ fn verify_get_weights() {
         vec![0.5, 0.6],
     ];
 
-    let l = create_layer(Conf::new(vec![], Failure::None));
+    let l = create_layer(Conf::new(vec![], Failure::None, 0));
 
     assert_eq!(l.get_weights(), weights);
     assert_eq!(l.get_weights().len(), 3);
@@ -57,7 +57,7 @@ fn verify_get_weights() {
 
 #[test]
 fn verify_get_intra_weights() {
-    let l = create_layer(Conf::new(vec![], Failure::None));
+    let l = create_layer(Conf::new(vec![], Failure::None, 0));
 
     let intra_weights = vec![
         vec![0.0, -0.1, -0.15],
@@ -72,7 +72,7 @@ fn verify_get_intra_weights() {
 #[test]
 fn verify_modification_bit_v_th_stuck0() {
     let failure = Failure::StuckAt0(StuckAt0::new(13));
-    let configuration = Conf::new(vec!["v_th".to_string()], failure);
+    let configuration = Conf::new(vec!["v_th".to_string()], failure, 1);
     let l = create_layer(configuration.clone());
 
     match configuration.get_failure() {
@@ -91,7 +91,7 @@ fn verify_modification_bit_v_th_stuck0() {
 #[test]
 fn verify_modification_bit_v_th_stuck1() {
     let failure = Failure::StuckAt1(StuckAt1::new(15));
-    let configuration = Conf::new(vec!["v_th".to_string()], failure);
+    let configuration = Conf::new(vec!["v_th".to_string()], failure, 1);
     let l = create_layer(configuration.clone());
 
     match configuration.get_failure() {
@@ -110,7 +110,7 @@ fn verify_modification_bit_v_th_stuck1() {
 #[test]
 fn verify_modification_bit_v_th_transient() {
     let failure = Failure::TransientBitFlip(TransientBitFlip::new(15));
-    let configuration = Conf::new(vec!["v_th".to_string()], failure);
+    let configuration = Conf::new(vec!["v_th".to_string()], failure, 1);
     let l = create_layer(configuration.clone());
 
     match configuration.get_failure() {
@@ -134,7 +134,7 @@ fn verify_modification_bit_v_th_transient() {
 #[test]
 fn verify_modify_bit_intra_weights_stuck0() {
     let failure = Failure::StuckAt0(StuckAt0::new(65));
-    let configuration = Conf::new(vec!["intra_weights".to_string()], failure);
+    let configuration = Conf::new(vec!["intra_weights".to_string()], failure, 1);
     let mut l = create_layer(configuration.clone());
     match configuration.get_failure() {
         Failure::StuckAt0(s) => {
@@ -158,7 +158,7 @@ fn verify_modify_bit_intra_weights_stuck0() {
 #[test]
 fn verify_modify_bit_intra_weights_stuck1() {
     let failure = Failure::StuckAt1(StuckAt1::new(66));
-    let configuration = Conf::new(vec!["intra_weights".to_string()], failure);
+    let configuration = Conf::new(vec!["intra_weights".to_string()], failure, 1);
     let mut l = create_layer(configuration.clone());
     match configuration.get_failure() {
         Failure::StuckAt1(s) => {
@@ -182,7 +182,7 @@ fn verify_modify_bit_intra_weights_stuck1() {
 #[test]
 fn verify_modify_bit_intra_weights_transient() {
     let failure = Failure::TransientBitFlip(TransientBitFlip::new(65));
-    let configuration = Conf::new(vec!["intra_weights".to_string()], failure);
+    let configuration = Conf::new(vec!["intra_weights".to_string()], failure, 1);
     let mut l = create_layer(configuration.clone());
     match configuration.get_failure() {
         Failure::TransientBitFlip(mut t) => {

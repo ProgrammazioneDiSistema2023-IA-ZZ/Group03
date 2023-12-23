@@ -6,4 +6,5 @@ pub trait Configuration: Send {
     fn get_vec_components(&self) -> Vec<String> ;
     fn get_len_vec_components(&self) -> usize;
     fn get_failure(&self) -> Failure;
+    fn get_numbers_of_fault(&self) -> usize;
 }

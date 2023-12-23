@@ -4,6 +4,7 @@ use crate::configuration::Configuration;
 pub struct Conf {
     components: Vec<String>,
     failure: Failure,
+    numbers_of_fault: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,8 +34,8 @@ pub struct TransientBitFlip {
 }
 
 impl Conf {
-    pub fn new(components: Vec<String>, failure: Failure) -> Self {
-        Self { components, failure }
+    pub fn new(components: Vec<String>, failure: Failure, numbers_of_fault: usize) -> Self {
+        Self { components, failure, numbers_of_fault }
     }
     pub fn get_components(&self) -> Vec<String> { self.components.clone() }
     pub fn get_failure(&self) -> Failure { self.failure.clone() }
@@ -68,4 +69,5 @@ impl Configuration for Conf {
     fn get_vec_components(&self) -> Vec<String> { self.components.clone() }
     fn get_len_vec_components(&self) -> usize { self.components.len() }
     fn get_failure(&self) -> Failure { self.failure.clone() }
+    fn get_numbers_of_fault(&self) -> usize { self.numbers_of_fault }
 }

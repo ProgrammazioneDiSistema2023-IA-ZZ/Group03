@@ -9,7 +9,7 @@ fn create_layer() -> Layer<LifNeuron, Conf> {
     let n2 = LifNeuron::new(0.88, 0.3, 0.1, 0.2, 0.05);
     let n3 = LifNeuron::new(0.9, 0.2, 0.05, 0.1, 0.05);
     let failure = Failure::StuckAt0(StuckAt0::new(0));
-    let configuration = Conf::new(vec!["v_mem".to_string(), "v_th".to_string()], failure);
+    let configuration = Conf::new(vec!["v_mem".to_string(), "v_th".to_string()], failure, 1);
     let neurons = vec![n, n2, n3];
 
     let weights = vec![

@@ -32,7 +32,7 @@ fn test_add_one_layer() {
     #[rustfmt::skip]
 
         let snn = SnnBuilder::<LifNeuron,Conf>::new(0)
-        .add_layer(vec![], vec![], vec![],Conf::new(vec![],Failure::None))
+        .add_layer(vec![], vec![], vec![],Conf::new(vec![], Failure::None, 0))
         .build();
 
     assert_eq!(snn.get_number_layers(), 1);
@@ -43,10 +43,10 @@ fn test_add_more_than_one_layer() {
     #[rustfmt::skip]
 
         let snn = SnnBuilder::<LifNeuron,Conf>::new(0)
-        .add_layer(vec![], vec![], vec![],Conf::new(vec![],Failure::None))
-        .add_layer(vec![], vec![], vec![],Conf::new(vec![],Failure::None))
-        .add_layer(vec![], vec![], vec![],Conf::new(vec![],Failure::None))
-        .add_layer(vec![], vec![], vec![],Conf::new(vec![],Failure::None))
+        .add_layer(vec![], vec![], vec![],Conf::new(vec![], Failure::None, 0))
+        .add_layer(vec![], vec![], vec![],Conf::new(vec![], Failure::None, 0))
+        .add_layer(vec![], vec![], vec![],Conf::new(vec![], Failure::None, 0))
+        .add_layer(vec![], vec![], vec![],Conf::new(vec![], Failure::None, 0))
         .build();
 
     assert_eq!(snn.get_number_layers(), 4);
@@ -64,12 +64,12 @@ fn test_add_weights_to_layers() {
             vec![0.4, 0.5, 0.6]], vec![
             vec![0.0, -0.2],
             vec![-0.9, 0.0],
-        ],Conf::new(vec![],Failure::None),)
+        ],Conf::new(vec![], Failure::None, 0),)
         .add_layer(vec![
             LifNeuron::new(0.45, 0.7, 0.1, 0.6,0.05)], vec![
             vec![0.2, 0.3]], vec![
             vec![0.0]
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let weights_layer1 = snn_params.extra_weights.get(0);
     let weights_layer2 = snn_params.extra_weights.get(1);
@@ -92,7 +92,7 @@ fn test_layer_with_one_neuron() {
             LifNeuron::new(0.12, 0.8, 0.03, 0.64,0.05)], vec![
             vec![0.3, 0.5, 0.1, 0.6, 0.3]], vec![
             vec![0.0]
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let layer_neurons1 = snn_params.neurons.get(0);
     let layer_neurons2 = snn_params.neurons.get(1);
@@ -117,7 +117,7 @@ fn test_neurons_with_same_parameters1() {
             vec![0.2, 0.3, 0.1, 0.4, 0.2]], vec![
             vec![0.0, -0.3],
             vec![-0.2, 0.0],
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let layer_neurons1 = snn_params.neurons.get(0);
 
@@ -146,7 +146,7 @@ fn test_neurons_with_same_parameters2() {
             vec![0.2, 0.3, 0.1, 0.4, 0.2]], vec![
             vec![0.0, -0.3],
             vec![-0.2, 0.0],
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let layer_neurons1 = snn_params.neurons.get(0);
 
@@ -178,7 +178,7 @@ fn test_layer_with_more_than_one_neuron() {
             vec![0.0, -0.34, -0.12],
             vec![-0.23, 0.0, -0.56],
             vec![-0.05, -0.01, 0.0],
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let layer_neurons1 = snn_params.neurons.get(0);
     let layer_neurons2 = snn_params.neurons.get(1);
@@ -212,7 +212,7 @@ fn test_intra_layer_weights_with_one_neuron() {
             LifNeuron::new(0.12, 0.1, 0.03, 0.98,0.05)], vec![
             vec![0.3, 0.5, 0.1, 0.6, 0.3]], vec![
             vec![0.0]
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let layer_intra_weights1 = snn_params.intra_weights.get(0);
     let layer_intra_weights2 = snn_params.intra_weights.get(1);
@@ -242,7 +242,7 @@ fn test_intra_layer_weights_with_more_than_one_neuron() {
             vec![0.0, -0.34, -0.12],
             vec![-0.23, 0.0, -0.56],
             vec![-0.05, -0.01, 0.0],
-        ],Conf::new(vec![],Failure::None)).get_params();
+        ],Conf::new(vec![], Failure::None, 0)).get_params();
 
     let layer_intra_weights1 = snn_params.intra_weights.get(0);
     let layer_intra_weights2 = snn_params.intra_weights.get(1);
@@ -285,7 +285,7 @@ fn test_complete_snn() {
             vec![-0.23, 0.0, -0.56, -0.23],
             vec![-0.05, -0.01, 0.0, -0.23],
             vec![-0.23, -0.23, -0.23, 0.0],
-        ],Conf::new(vec![],Failure::None)).add_layer(vec![
+        ],Conf::new(vec![], Failure::None, 0)).add_layer(vec![
         LifNeuron::new(0.17, 0.12, 0.78, 0.67,0.05),
         LifNeuron::new(0.25, 0.36, 0.71, 0.84,0.05)], vec![
         vec![0.1, 0.3, 0.4, 0.2],
@@ -293,7 +293,7 @@ fn test_complete_snn() {
     ], vec![
         vec![0.0, -0.62],
         vec![-0.12, 0.0],
-    ],Conf::new(vec![],Failure::None)).build();
+    ],Conf::new(vec![], Failure::None, 0)).build();
 
     let snn_layers = snn.get_layers();
 
@@ -376,7 +376,7 @@ fn test_complete_snn_with_different_dt() {
             vec![-0.23, 0.0, -0.56, -0.23],
             vec![-0.05, -0.01, 0.0, -0.23],
             vec![-0.23, -0.23, -0.23, 0.0],
-        ],Conf::new(vec![],Failure::None)).add_layer(vec![
+        ],Conf::new(vec![], Failure::None, 0)).add_layer(vec![
         LifNeuron::new(0.17, 0.12, 0.78, 0.67,0.05),
         LifNeuron::new(0.25, 0.36, 0.71, 0.84,0.05)], vec![
         vec![0.1, 0.3, 0.4, 0.2],
@@ -384,7 +384,7 @@ fn test_complete_snn_with_different_dt() {
     ], vec![
         vec![0.0, -0.62],
         vec![-0.12, 0.0],
-    ],Conf::new(vec![],Failure::None)).build();
+    ],Conf::new(vec![], Failure::None, 0)).build();
 
     let snn_layers = snn.get_layers();
 
@@ -461,7 +461,7 @@ fn test_snn_with_negative_weights() {
             vec![-0.2, 0.5]
         ], vec![
             vec![0.0]
-        ],Conf::new(vec![],Failure::None)).build();
+        ],Conf::new(vec![], Failure::None, 0)).build();
 }
 
 #[test]
@@ -479,7 +479,7 @@ fn test_snn_with_positive_intra_weights() {
         ], vec![
             vec![0.0, 0.5],
             vec![-0.05, 0.0],
-        ],Conf::new(vec![],Failure::None)).build();
+        ],Conf::new(vec![], Failure::None, 0)).build();
 }
 
 #[test]
@@ -500,12 +500,12 @@ fn test_snn_wrong_extra_weights1() {
         ], vec![
             vec![0.0, -0.5],
             vec![-0.05, 0.0],
-        ],Conf::new(vec![],Failure::None)).add_layer(vec![
+        ],Conf::new(vec![], Failure::None, 0)).add_layer(vec![
         LifNeuron::new(0.1, 0.05, 0.1, 1.0,0.05)], vec![
         vec![0.3, 0.2, 0.4]
     ], vec![
         vec![0.0]
-    ],Conf::new(vec![],Failure::None)).build();
+    ],Conf::new(vec![], Failure::None, 0)).build();
 }
 
 #[test]
@@ -526,7 +526,7 @@ fn test_snn_wrong_intra_weights1() {
         ], vec![
             vec![0.0, -0.1, -0.4],
             vec![-0.05, 0.0],
-        ],Conf::new(vec![],Failure::None)).build();
+        ],Conf::new(vec![], Failure::None, 0)).build();
 }
 
 #[test]
@@ -547,13 +547,13 @@ fn test_snn_wrong_extra_weights2() {
         ], vec![
             vec![0.0, -1.5],
             vec![-0.05, 0.0],
-        ],Conf::new(vec![],Failure::None)).add_layer(vec![
+        ],Conf::new(vec![], Failure::None, 0)).add_layer(vec![
         LifNeuron::new(0.1, 0.05, 0.1, 1.0,0.05)], vec![
         vec![0.3, 0.2],
         vec![0.1, 0.5],
     ], vec![
         vec![0.0]
-    ],Conf::new(vec![],Failure::None)).build();
+    ],Conf::new(vec![], Failure::None, 0)).build();
 }
 
 #[test]
@@ -575,7 +575,7 @@ fn test_snn_wrong_intra_weights2() {
             vec![0.0, -0.1],
             vec![-0.05, 0.0],
             vec![0.0, -0.3],
-        ],Conf::new(vec![],Failure::None),).build();
+        ],Conf::new(vec![], Failure::None, 0),).build();
 }
 
 #[test]
