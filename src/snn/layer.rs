@@ -80,16 +80,14 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                 }
             }
             Failure::TransientBitFlip(mut transient_bit_flip) => {
-                if !transient_bit_flip.get_bit_changed() {
-                    if elements.contains(&"v_th".to_string()) {
-                        let neuron = self.neurons.get_mut(0).unwrap();
-                        let mut vec_byte_original: Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
-                        let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
-                        let value_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
-                        modify_bits(&mut vec_byte_original, transient_bit_flip.get_position() as u8 % 64u8, value_bit);
-                        transient_bit_flip.set_bit_changed(true);
-                        neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                    }
+                if !transient_bit_flip.get_bit_changed() && elements.contains(&"v_th".to_string()) {
+                    let neuron = self.neurons.get_mut(0).unwrap();
+                    let mut vec_byte_original: Vec<u8> = neuron.get_v_th().to_ne_bytes().iter().cloned().collect();
+                    let byte_original = vec_byte_original.get(transient_bit_flip.get_position() as usize / 8).cloned().unwrap_or(0u8);
+                    let value_bit = (byte_original >> (transient_bit_flip.get_position() % 8)) & 1;
+                    modify_bits(&mut vec_byte_original, transient_bit_flip.get_position() as u8 % 64u8, value_bit);
+                    transient_bit_flip.set_bit_changed(true);
+                    neuron.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
                 }
             }
             Failure::None => {}
@@ -98,7 +96,6 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64,
                       output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
-
         /* Generate N-occurrences of faults according to the configuration */
         if self.configuration.get_len_vec_components() > 0 {
             for _ in 0..self.configuration.get_numbers_of_fault() {

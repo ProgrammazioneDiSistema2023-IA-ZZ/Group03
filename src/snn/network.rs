@@ -124,11 +124,13 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
 
     fn process_events(&mut self, spikes: Vec<SpikeEvent>) -> Vec<SpikeEvent> {
         let mut threads = Vec::<JoinHandle<()>>::new();
+
         /* create channel to feed the (first layer of the) network */
         let (net_input_tx, mut layer_rc) = channel::<SpikeEvent>();
 
         /* create input TX and output RC for each layer and spawn layers' threads */
         for layer_ref in self {
+
             /* create channel to feed the next layer */
             let (layer_tx, next_layer_rc) = channel::<SpikeEvent>();
 
@@ -137,12 +139,16 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
             let thread = thread::spawn(move || {
                 /* retrieve layer */
                 let mut layer = layer_ref_cloned.lock().unwrap();
+
                 /* execute layer task */
                 layer.process(layer_rc, layer_tx);
             });
 
-            threads.push(thread);   /* push the new thread into threads' pool */
-            layer_rc = next_layer_rc;    /* update external rc, to pass it to the next layer */
+            /* push the new thread into pool of threads */
+            threads.push(thread);
+
+            /* update external rc, to pass it to the next layer */
+            layer_rc = next_layer_rc;
         }
 
         let net_output_rc = layer_rc;
@@ -157,7 +163,7 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
             let instant = spike_event.get_ts();
 
             net_input_tx.send(spike_event)
-                .expect(&format!("Unexpected error sending input spike event t={}", instant));
+                .unwrap_or_else(|_| panic!("Unexpected error sending input spike event t={}", instant))
         }
 
         drop(net_input_tx); /* drop input tx, to make all the threads terminate */
