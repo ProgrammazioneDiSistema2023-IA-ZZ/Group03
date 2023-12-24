@@ -51,6 +51,8 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     pub fn get_configuration(&self) -> R { self.configuration.clone() }
 
     pub fn set_intra_weights(&mut self, val: Vec<Vec<f64>>) { self.intra_weights = val }
+    pub fn set_weights(&mut self, val: Vec<Vec<f64>>) { self.weights = val }
+
 
     fn generate_faults(&mut self) {
         /* If there is at least one component to fail, repeat for each component N-times the faults */

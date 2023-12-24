@@ -90,6 +90,10 @@ impl Neuron for LifNeuron {
         self.ts = val;
     }
 
+    fn set_dt(&mut self, val: f64) {
+        self.dt = val;
+    }
+
     fn decrement_v_mem(&mut self, intra: f64) {
         self.v_mem += intra;
     }

@@ -26,4 +26,5 @@ pub trait Neuron: Send {
     fn set_v_rest(&mut self, val: f64);
     fn set_ts(&mut self, val: u64);
     fn get_dt(&self)->f64;
+    fn set_dt(&mut self,val:f64);
 }
