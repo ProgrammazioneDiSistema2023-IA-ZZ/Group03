@@ -54,29 +54,6 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     pub fn set_weights(&mut self, val: Vec<Vec<f64>>) { self.weights = val }
 
     fn generate_faults(&mut self) {
-        /*
-        Prima di partire con la fase vera e propria dei guasti,
-        occorre avere una fase di setup dove in maniera randomica selezioniamo
-        100 componenti da guastare tra tutti i tipi dei componenti ricevuti.
-
-        Per fare ciò selezioniamo una X% per componenti di tipo:
-            VTh,
-            VRest,
-            VReset,
-            Tau,
-            VMem,
-            Ts,
-            Dt,
-
-        e una 100-X% quindi per i componenti di tipo:
-            Weights,
-            IntraWeights,
-            PrevSpikes,
-
-        quindi scegliamo per la X% dei neuroni random grazie agli id,
-        infine dalla 100-X% scegliamo dai layers
-        */
-
         /* If there is at least one component to fail, search the selected component to keep it broken */
         for component in self.configuration.get_vec_components() {
             /* Get index of neuron and info of failure from configuration field */

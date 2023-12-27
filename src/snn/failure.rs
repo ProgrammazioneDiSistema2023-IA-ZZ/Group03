@@ -17,7 +17,7 @@ pub struct Conf {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Components {
-    /* List of fault-able components of LifNeuron */
+    /* List of possible fault components of LifNeuron */
     VTh,
     VRest,
     VReset,
@@ -26,7 +26,7 @@ pub enum Components {
     Ts,
     Dt,
 
-    /* List of fault-able components of Layers*/
+    /* List of possible fault components of Layers*/
     Weights,
     IntraWeights,
     PrevSpikes,
