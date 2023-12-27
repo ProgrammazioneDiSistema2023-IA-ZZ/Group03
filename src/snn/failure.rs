@@ -2,9 +2,36 @@ use crate::configuration::Configuration;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Conf {
-    components: Vec<String>,
+    components: Vec<Components>,
     failure: Failure,
-    numbers_of_fault: usize,
+    index_neuron: usize,
+}
+
+/*
+#[derive(Debug, Clone, PartialEq)]
+pub struct Conf {
+    info: Vec<Components, usize>,
+    failure: Failure,
+}
+*/
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Components {
+    /* List of fault-able components of LifNeuron */
+    VTh,
+    VRest,
+    VReset,
+    Tau,
+    VMem,
+    Ts,
+    Dt,
+
+    /* List of fault-able components of Layers*/
+    Weights,
+    IntraWeights,
+    PrevSpikes,
+
+    None,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,13 +60,6 @@ pub struct TransientBitFlip {
     bit_changed: bool,
 }
 
-impl Conf {
-    pub fn new(components: Vec<String>, failure: Failure, numbers_of_fault: usize) -> Self {
-        Self { components, failure, numbers_of_fault }
-    }
-    pub fn get_components(&self) -> Vec<String> { self.components.clone() }
-    pub fn get_failure(&self) -> Failure { self.failure.clone() }
-}
 
 impl StuckAt0 {
     pub fn new(position: u32) -> Self { Self { position, value: 0 } }
@@ -60,14 +80,30 @@ impl TransientBitFlip {
     pub fn set_bit_changed(&mut self, val: bool) { self.bit_changed = val }
 }
 
+impl Conf {
+    pub fn new(components: Vec<Components>, failure: Failure, index_neuron: usize) -> Self {
+        Self { components, failure, index_neuron }
+    }
+}
+
 impl Configuration for Conf {
     fn init(&mut self) {
         self.components = vec![];
         self.failure = Failure::None;
     }
-
-    fn get_vec_components(&self) -> Vec<String> { self.components.clone() }
+    fn get_vec_components(&self) -> Vec<Components> { self.components.clone() }
     fn get_len_vec_components(&self) -> usize { self.components.len() }
     fn get_failure(&self) -> Failure { self.failure.clone() }
-    fn get_numbers_of_fault(&self) -> usize { self.numbers_of_fault }
+    fn get_index_neuron(&self) -> usize { self.index_neuron }
+}
+
+impl Failure {
+    pub fn get_position(&self) -> Option<u32> {
+        match self {
+            Failure::StuckAt0(s) => { Some(s.get_position()) }
+            Failure::StuckAt1(s) => { Some(s.get_position()) }
+            Failure::TransientBitFlip(t) => { Some(t.get_position()) }
+            _ => { None }
+        }
+    }
 }

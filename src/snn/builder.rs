@@ -9,18 +9,12 @@ Object containing the configuration parameters describing the SNN architecture
  */
 #[derive(Clone)]
 pub struct SnnParams<N: Neuron, R: Configuration> {
-    pub input_dimensions: usize,
-    /* dimension of the network input layer */
-    pub neurons: Vec<Vec<N>>,
-    /* neurons per each layer */
-    pub extra_weights: Vec<Vec<Vec<f64>>>,
-    /* (positive) weights between layers */
-    pub intra_weights: Vec<Vec<Vec<f64>>>,
-    /* (negative) weights inside the same layer */
-    pub num_layers: usize,
-    /* number of layers */
-    pub configuration: Vec<R>,
-    /* configuration for each layer */
+    pub input_dimensions: usize,            /* dimension of the network input layer */
+    pub neurons: Vec<Vec<N>>,               /* neurons per each layer */
+    pub extra_weights: Vec<Vec<Vec<f64>>>,  /* (positive) weights between layers */
+    pub intra_weights: Vec<Vec<Vec<f64>>>,  /* (negative) weights inside the same layer */
+    pub num_layers: usize,                  /* number of layers */
+    pub configuration: Vec<R>,              /* configuration for each layer */
 }
 
 /**
