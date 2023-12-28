@@ -1,4 +1,4 @@
-use spiking_neural_network::failure::{Components, Conf, Failure, StuckAt0, StuckAt1};
+use spiking_neural_network::failure::{Components, Conf, Failure, StuckAt0, StuckAt1, TransientBitFlip};
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::layer::{Layer, modify_bits};
 use spiking_neural_network::neuron::Neuron;
@@ -69,7 +69,7 @@ fn verify_get_intra_weights() {
 
 #[test]
 fn verify_modification_bit_v_th_stuck0() {
-    let failure = Failure::StuckAt0(StuckAt0::new(13));
+    let failure = Failure::StuckAt0(StuckAt0::new(12));
     let configuration = Conf::new(vec![Components::VMem], failure.clone(), 1);
     let l = create_layer(configuration.clone());
 
@@ -79,12 +79,12 @@ fn verify_modification_bit_v_th_stuck0() {
     let vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().to_vec().iter().rev().cloned().collect();
     let vec_byte_mod = modify_bits(failure, vec_byte_original.clone());
     n.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
-    assert_eq!(n.get_v_th(), 0.65);//use position 13
+    assert_eq!(n.get_v_th(), 0.65);//use position 12
 }
 
 #[test]
 fn verify_modification_bit_v_th_stuck1() {
-    let failure = Failure::StuckAt1(StuckAt1::new(15));
+    let failure = Failure::StuckAt1(StuckAt1::new(14));
     let configuration = Conf::new(vec![Components::VTh], failure.clone(), 1);
     let l = create_layer(configuration.clone());
 
@@ -94,34 +94,25 @@ fn verify_modification_bit_v_th_stuck1() {
     let vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().to_vec().iter().rev().cloned().collect();
     let vec_byte_mod = modify_bits(failure, vec_byte_original.clone());
     n.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
-    assert_eq!(n.get_v_th(), 0.9625);//use position 15
+    assert_eq!(n.get_v_th(), 0.9625);//use position 14
 }
 
-/*
+
 #[test]
 fn verify_modification_bit_v_th_transient() {
-    let failure = Failure::TransientBitFlip(TransientBitFlip::new(15));
-    let configuration = Conf::new(vec![Components::VTh], failure, 1);
+    let failure = Failure::TransientBitFlip(TransientBitFlip::new(11));
+    let configuration = Conf::new(vec![Components::VTh], failure.clone(), 1);
     let l = create_layer(configuration.clone());
 
-    match configuration.get_failure() {
-        Failure::TransientBitFlip(mut transient_bit) => {
-            if !transient_bit.get_bit_changed() {
-                let mut neuron = l.get_neurons();
-                let n = neuron.get_mut(0).unwrap();
-                let mut vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
-                let byte_original = vec_byte_original.get(transient_bit.get_position() as usize / 8).cloned().unwrap_or(0u8);
-                let valor_bit = (byte_original >> (transient_bit.get_position() % 8)) & 1;
-                modify_bits(&mut vec_byte_original, transient_bit.get_position() as u8 % 64u8, valor_bit);
-                transient_bit.set_bit_changed(true);
-                n.set_v_th(f64::from_ne_bytes(vec_byte_original.as_slice().try_into().unwrap()));
-                assert_eq!(n.get_v_th(), 0.9625);//use position 15
-            }
-        }
-        _ => {}
-    }
-}
+    let mut neuron = l.get_neurons();
+    let n = neuron.get_mut(0).unwrap();
 
+    let vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
+    let vec_byte_mod = modify_bits(failure, vec_byte_original.clone());
+    n.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+    assert_eq!(n.get_v_th(), 0.65);//use position 11
+}
+/*
 #[test]
 fn verify_modification_bit_v_rest_stuck0() {
     let failure = Failure::StuckAt0(StuckAt0::new(13));

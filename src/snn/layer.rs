@@ -3,6 +3,7 @@ use crate::snn::neuron::Neuron;
 use crate::snn::spike_event::SpikeEvent;
 use crate::snn::configuration::Configuration;
 use crate::failure::{Components, Failure};
+use bit::BitIndex;
 
 #[derive(Debug)]
 pub struct Layer<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'static> {
@@ -118,7 +119,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     self.weights = matrix;
                 }
                 Components::PrevSpikes => {
-                    /*FUNZIONA??*/
+                    /*TODO*/
                     let mut vec = self.prev_spikes.clone();
                     let i = ((failure.get_position().unwrap() / 8) / vec.len() as u32) as usize;
                     let vec_byte_original = vec[i].to_ne_bytes().to_vec();
@@ -130,7 +131,6 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
             }
         }
     }
-
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64, output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
         /* Generate FAULTS according to the configuration */
@@ -237,39 +237,31 @@ pub fn modify_bits(failure: Failure, mut vec_byte: Vec<u8>) -> Vec<u8> {
 
 */
     let position = failure.get_position().unwrap() as usize;
+    if position >= 64 {
+        return vec_byte;
+    }
+    let pos_byte = 7 - (position % 8);
+    let reference = &mut vec_byte[position / 8];
 
     /* Match the type of failure -> StuckAt0 / StuckAt1 / TransientBitFlip */
     match failure {
         Failure::StuckAt0(_s) => {
-            /* Protection Overflow */
-            if position > 0 && position < 64 {
-                let mask = 1_u8.checked_shl((8 - (position % 8)) as u32).unwrap_or(1);
-                vec_byte[position / 8] &= !(mask);
-            }
+            reference.set_bit(pos_byte, false);
             vec_byte.iter().rev().cloned().collect()
         }
-
         Failure::StuckAt1(_s) => {
-            /* Protection Overflow */
-            if position > 0 && position < 64 {
-                /*TODO*/
-                let mask = 1_u8.checked_shl((8 - (position % 8)) as u32).unwrap_or(1);
-                vec_byte[position / 8] &= mask;
-            }
+            reference.set_bit(pos_byte, true);
             vec_byte.iter().rev().cloned().collect()
         }
         Failure::TransientBitFlip(mut t) => {
-            if !t.get_bit_changed() && position > 0 && position < 64 {
-                /* XOR of the specific bit */
-                /*TODO*/
-                vec_byte[position / 8] ^= 1 << (position % 8);
+            if !t.get_bit_changed() {
+                let old_bit = reference.bit(pos_byte);
+                reference.set_bit(pos_byte, !old_bit);
                 t.set_bit_changed(true);
             }
             vec_byte.iter().rev().cloned().collect()
         }
-        _ => {
-            vec_byte
-        }
+        _ => { vec_byte }
     }
 }
 
