@@ -205,33 +205,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 }
 
 pub fn modify_bits(failure: Failure, mut val: u64) -> u64 {
-    /*
-    let position = failure.get_position().unwrap() as usize;
 
-    let val = match failure {
-        Failure::StuckAt0(_s) => 0,
-        Failure::StuckAt1(_s) => 1,
-        Failure::TransientBitFlip(t) => {
-            let byte_original = vec_byte.get(t.get_position() as usize / 8).cloned().unwrap_or(0u8);
-            (byte_original >> (t.get_position() % 8)) & 1
-        }
-        _ => {0}
-    };
-
-    let rest_position = 8 - (position % 8);
-    for (pos, byte) in vec_byte.iter_mut().rev().enumerate() {
-        if (position / 8) == pos {
-            //check of the mask
-            match 1_u8.checked_shl(rest_position as u32) {
-                None => {}
-                Some(value) => { *byte = (*byte & !value) | (val << rest_position); }
-            }
-        }
-    }
-    vec_byte.clone()
-}
-
-*/
     let position = failure.get_position().unwrap();
     if position >= 64 {
         return val;
