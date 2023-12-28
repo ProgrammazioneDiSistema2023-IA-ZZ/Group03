@@ -19,7 +19,10 @@ fn create_layer(configuration: Conf) -> Layer<LifNeuron, Conf> {
         vec![-0.15, -0.1, 0.0],
     ];
 
-    let l = Layer::new(neurons, weights, intra_weights, configuration);
+    let mut l = Layer::new(neurons, weights, intra_weights, configuration);
+
+    l.set_prev_spikes(vec![1,1,0]);
+
     l
 }
 
@@ -502,5 +505,45 @@ fn verify_modification_bit_extra_weights_transient() {
     ]);
 }
 
+
+#[test]
+fn verify_modification_bit_prev_spikes_stuck0() {
+    let failure = Failure::StuckAt0(StuckAt0::new(12));
+    let configuration = Conf::new(vec![Components::Weights], failure.clone(), 1);
+    let mut l = create_layer(configuration.clone());
+
+    let modified_prev_spikes = l.fault_prev_spikes(&failure);
+
+    l.set_prev_spikes(modified_prev_spikes);
+
+    assert_eq!(l.get_prev_spikes(), vec![0,1,0]);
+}
+
+
+#[test]
+fn verify_modification_bit_prev_spikes_stuck1() {
+    let failure = Failure::StuckAt1(StuckAt1::new(14));
+    let configuration = Conf::new(vec![Components::Weights], failure.clone(), 1);
+    let mut l = create_layer(configuration.clone());
+
+    let modified_prev_spikes = l.fault_prev_spikes(&failure);
+
+    l.set_prev_spikes(modified_prev_spikes);
+
+    assert_eq!(l.get_prev_spikes(), vec![1,1,1]);
+}
+
+#[test]
+fn verify_modification_bit_prev_spikes_transient() {
+    let failure = Failure::TransientBitFlip(TransientBitFlip::new(14));
+    let configuration = Conf::new(vec![Components::Weights], failure.clone(), 1);
+    let mut l = create_layer(configuration.clone());
+
+    let modified_prev_spikes = l.fault_prev_spikes(&failure);
+
+    l.set_prev_spikes(modified_prev_spikes);
+
+    assert_eq!(l.get_prev_spikes(), vec![1,1,1]);
+}
 
 

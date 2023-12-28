@@ -54,6 +54,8 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     pub fn set_weights(&mut self, val: Vec<Vec<f64>>) { self.weights = val }
 
+    pub fn set_prev_spikes(&mut self, val: Vec<u8>) { self.prev_spikes = val }
+
     fn generate_faults(&mut self) {
         /* If there is at least one component to fail, search the selected component to keep it broken */
         for component in self.configuration.get_vec_components() {
@@ -99,7 +101,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     let j = (failure.get_position().unwrap() / 64) % matrix.len();
 
                     let new_val = modify_bits(failure, matrix[i][j].to_bits());
-                    matrix[i][j] = f64::from_ne_bytes(new_val.to_ne_bytes());
+                    matrix[i][j] = f64::from_bits(new_val);
                     self.intra_weights = matrix;
                 }
                 Components::Weights => {
@@ -108,24 +110,47 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     let j = (failure.get_position().unwrap() / 64) % matrix.len();
 
                     let new_val = modify_bits(failure, matrix[i][j].to_bits());
-                    matrix[i][j] = f64::from_ne_bytes(new_val.to_ne_bytes());
+                    matrix[i][j] = f64::from_bits(new_val);
                     self.weights = matrix;
                 }
                 Components::PrevSpikes => {
-                    /*TODO*/
-                    /*
-                    let mut vec = self.prev_spikes.clone();
 
-                    let i = (failure.get_position().unwrap() / 8) / vec.len();
+                    let modified_prev_spikes = self.fault_prev_spikes(&failure);
 
-                    let new_val = modify_bits(failure, vec[i] as u64);
-                    vec[i] = u8::from_ne_bytes(new_val.to_ne_bytes());
-                    self.prev_spikes = vec;
-                    */
+                    self.set_prev_spikes(modified_prev_spikes);
+
                 }
                 Components::None => {}
             }
         }
+    }
+    pub fn fault_prev_spikes(&self,failure: &Failure)->Vec<u8>{
+        let mut vec = self.get_prev_spikes();
+
+        let i = failure.get_position().unwrap()  % vec.len();
+
+        match failure {
+            Failure::StuckAt0(s)=>{
+                if vec[i]==1{
+                    vec[i]=0;
+                }
+            },
+            Failure::StuckAt1(s)=>{
+                if vec[i]==0{
+                    vec[i]=1;
+                }
+            },
+            Failure::TransientBitFlip(t)=>{
+                let changed = t.get_bit_changed();
+                if !changed{
+                    vec[i]=1-vec[i];
+                }
+            },
+            _ => {}
+        }
+
+        vec
+
     }
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64, output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
@@ -206,26 +231,28 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
 pub fn modify_bits(failure: Failure, mut val: u64) -> u64 {
 
-    let position = failure.get_position().unwrap();
+    let mut position = failure.get_position().unwrap();
+
     if position >= 64 {
-        return val;
-        //position = position%64;
+        position = position%64;
     }
+
+    position = 63-position;
 
     /* Match the type of failure -> StuckAt0 / StuckAt1 / TransientBitFlip */
     match failure {
         Failure::StuckAt0(_s) => {
-            val.set_bit(63-position, false);
+            val.set_bit(position, false);
             val
         }
         Failure::StuckAt1(_s) => {
-            val.set_bit(63-position, true);
+            val.set_bit(position, true);
             val
         }
         Failure::TransientBitFlip(mut t) => {
             if !t.get_bit_changed() {
-                let old_bit = val.bit(63-position);
-                val.set_bit(63-position, !old_bit);
+                let old_bit = val.bit(position);
+                val.set_bit(position, !old_bit);
                 t.set_bit_changed(true);
             }
             val
