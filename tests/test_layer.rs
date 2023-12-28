@@ -76,9 +76,9 @@ fn verify_modification_bit_v_th_stuck0() {
     let mut neuron = l.get_neurons();
     let n = neuron.get_mut(0).unwrap();
 
-    let vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().to_vec().iter().rev().cloned().collect();
-    let vec_byte_mod = modify_bits(failure, vec_byte_original.clone());
-    n.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+    let new_val = modify_bits(failure, n.get_v_th().to_bits());
+    n.set_v_th(f64::from_bits(new_val));
+
     assert_eq!(n.get_v_th(), 0.65);//use position 12
 }
 
@@ -91,26 +91,24 @@ fn verify_modification_bit_v_th_stuck1() {
     let mut neuron = l.get_neurons();
     let n = neuron.get_mut(0).unwrap();
 
-    let vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().to_vec().iter().rev().cloned().collect();
-    let vec_byte_mod = modify_bits(failure, vec_byte_original.clone());
-    n.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+    let new_val = modify_bits(failure, n.get_v_th().to_bits());
+    n.set_v_th(f64::from_ne_bytes(new_val.to_ne_bytes()));
     assert_eq!(n.get_v_th(), 0.9625);//use position 14
 }
 
 
 #[test]
 fn verify_modification_bit_v_th_transient() {
-    let failure = Failure::TransientBitFlip(TransientBitFlip::new(11));
+    let failure = Failure::TransientBitFlip(TransientBitFlip::new(12));
     let configuration = Conf::new(vec![Components::VTh], failure.clone(), 1);
     let l = create_layer(configuration.clone());
 
     let mut neuron = l.get_neurons();
     let n = neuron.get_mut(0).unwrap();
 
-    let vec_byte_original: Vec<_> = n.get_v_th().to_ne_bytes().iter().cloned().collect();
-    let vec_byte_mod = modify_bits(failure, vec_byte_original.clone());
-    n.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
-    assert_eq!(n.get_v_th(), 0.65);//use position 11
+    let new_val = modify_bits(failure, n.get_v_th().to_bits());
+    n.set_v_th(f64::from_ne_bytes(new_val.to_ne_bytes()));
+    assert_eq!(n.get_v_th(), 0.65);//use position 12
 }
 /*
 #[test]

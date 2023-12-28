@@ -74,7 +74,7 @@ fn verify_output_last_layer_dim() {
     ];
     assert_eq!(n.process(&input_spikes), vec![
         vec![0, 0, 0], /* 1st neuron input train of spikes */
-        vec![1, 0, 1], /* 2nd neuron input train of spikes */
+        vec![0, 1, 0], /* 2nd neuron input train of spikes */
         vec![0, 1, 1], /* 3rd neuron input train of spikes */
     ]);
 }

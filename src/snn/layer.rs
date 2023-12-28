@@ -66,66 +66,62 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
             match component {
                 Components::VTh => {
-                    let vec_byte_original = neuron.get_v_th().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_v_th(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_v_th().to_bits());
+                    neuron.set_v_th(f64::from_bits(new_val));
                 }
                 Components::VRest => {
-                    let vec_byte_original = neuron.get_v_rest().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_v_rest(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_v_rest().to_bits());
+                    neuron.set_v_rest(f64::from_bits(new_val));
                 }
                 Components::VReset => {
-                    let vec_byte_original = neuron.get_v_reset().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_v_reset(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_v_reset().to_bits());
+                    neuron.set_v_reset(f64::from_bits(new_val));
                 }
                 Components::Tau => {
-                    let vec_byte_original = neuron.get_tau().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_tau(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_tau().to_bits());
+                    neuron.set_tau(f64::from_bits(new_val));
                 }
                 Components::VMem => {
-                    let vec_byte_original = neuron.get_v_mem().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_v_mem(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_v_mem().to_bits());
+                    neuron.set_v_mem(f64::from_bits(new_val));
                 }
                 Components::Ts => {
-                    let vec_byte_original = neuron.get_ts().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_ts(u64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_ts());
+                    neuron.set_ts(new_val);
                 }
                 Components::Dt => {
-                    let vec_byte_original = neuron.get_dt().to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    neuron.set_dt(f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap()));
+                    let new_val = modify_bits(failure, neuron.get_dt().to_bits());
+                    neuron.set_dt(f64::from_bits(new_val));
                 }
                 Components::IntraWeights => {
                     let mut matrix = self.intra_weights.clone();
-                    let i = ((failure.get_position().unwrap() / 64) / matrix.len() as u32) as usize;
-                    let j = ((failure.get_position().unwrap() / 64) % matrix.len() as u32) as usize;
-                    let vec_byte_original = matrix[i][j].to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    matrix[i][j] = f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap());
+                    let i = (failure.get_position().unwrap() / 64) / matrix.len();
+                    let j = (failure.get_position().unwrap() / 64) % matrix.len();
+
+                    let new_val = modify_bits(failure, matrix[i][j].to_bits());
+                    matrix[i][j] = f64::from_ne_bytes(new_val.to_ne_bytes());
                     self.intra_weights = matrix;
                 }
                 Components::Weights => {
                     let mut matrix = self.weights.clone();
-                    let i = ((failure.get_position().unwrap() / 64) / matrix.len() as u32) as usize;
-                    let j = ((failure.get_position().unwrap() / 64) % matrix.len() as u32) as usize;
-                    let vec_byte_original = matrix[i][j].to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    matrix[i][j] = f64::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap());
+                    let i = (failure.get_position().unwrap() / 64) / matrix.len();
+                    let j = (failure.get_position().unwrap() / 64) % matrix.len();
+
+                    let new_val = modify_bits(failure, matrix[i][j].to_bits());
+                    matrix[i][j] = f64::from_ne_bytes(new_val.to_ne_bytes());
                     self.weights = matrix;
                 }
                 Components::PrevSpikes => {
                     /*TODO*/
+                    /*
                     let mut vec = self.prev_spikes.clone();
-                    let i = ((failure.get_position().unwrap() / 8) / vec.len() as u32) as usize;
-                    let vec_byte_original = vec[i].to_ne_bytes().to_vec();
-                    let vec_byte_mod = modify_bits(failure, vec_byte_original);
-                    vec[i] = u8::from_ne_bytes(vec_byte_mod.as_slice().try_into().unwrap());
+
+                    let i = (failure.get_position().unwrap() / 8) / vec.len();
+
+                    let new_val = modify_bits(failure, vec[i] as u64);
+                    vec[i] = u8::from_ne_bytes(new_val.to_ne_bytes());
                     self.prev_spikes = vec;
+                    */
                 }
                 Components::None => {}
             }
@@ -208,7 +204,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     }
 }
 
-pub fn modify_bits(failure: Failure, mut vec_byte: Vec<u8>) -> Vec<u8> {
+pub fn modify_bits(failure: Failure, mut val: u64) -> u64 {
     /*
     let position = failure.get_position().unwrap() as usize;
 
@@ -236,32 +232,31 @@ pub fn modify_bits(failure: Failure, mut vec_byte: Vec<u8>) -> Vec<u8> {
 }
 
 */
-    let position = failure.get_position().unwrap() as usize;
+    let position = failure.get_position().unwrap();
     if position >= 64 {
-        return vec_byte;
+        return val;
+        //position = position%64;
     }
-    let pos_byte = 7 - (position % 8);
-    let reference = &mut vec_byte[position / 8];
 
     /* Match the type of failure -> StuckAt0 / StuckAt1 / TransientBitFlip */
     match failure {
         Failure::StuckAt0(_s) => {
-            reference.set_bit(pos_byte, false);
-            vec_byte.iter().rev().cloned().collect()
+            val.set_bit(63-position, false);
+            val
         }
         Failure::StuckAt1(_s) => {
-            reference.set_bit(pos_byte, true);
-            vec_byte.iter().rev().cloned().collect()
+            val.set_bit(63-position, true);
+            val
         }
         Failure::TransientBitFlip(mut t) => {
             if !t.get_bit_changed() {
-                let old_bit = reference.bit(pos_byte);
-                reference.set_bit(pos_byte, !old_bit);
+                let old_bit = val.bit(63-position);
+                val.set_bit(63-position, !old_bit);
                 t.set_bit_changed(true);
             }
-            vec_byte.iter().rev().cloned().collect()
+            val
         }
-        _ => { vec_byte }
+        _ => { val }
     }
 }
 
