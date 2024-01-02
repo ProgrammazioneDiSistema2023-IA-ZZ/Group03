@@ -130,12 +130,12 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
         let i = failure.get_position().unwrap()  % vec.len();
 
         match failure {
-            Failure::StuckAt0(s)=>{
+            Failure::StuckAt0(_)=>{
                 if vec[i]==1{
                     vec[i]=0;
                 }
             },
-            Failure::StuckAt1(s)=>{
+            Failure::StuckAt1(_)=>{
                 if vec[i]==0{
                     vec[i]=1;
                 }
