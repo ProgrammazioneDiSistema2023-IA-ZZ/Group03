@@ -1,5 +1,5 @@
 import numpy as np
-
+import random as rd
 from mnist import loadDataset
 from inputInterface import imgToSpikeTrain
 from outputInterface import computePerformance
@@ -51,62 +51,59 @@ imgArray, labelsArray = loadDataset(images, labels)
 
 numberOfCycles = 101
 
-# Loop over the whole dataset
-
+#Loop over the whole dataset
 # end = 64
-
 # nums = []
-
 # for k in range(end):
-#
+
 #     random_num = rd.randint(0, end)
 #     nums += [random_num]
 
 for i in range(numberOfCycles):
-    # Translate each pixel into a sequence of spikes (vec[3500[784]])
-    # convert img to spikesTrains and writes into a inputSpikes file
-    spikesTrains = imgToSpikeTrain(imgArray[i], dt, computationSteps, inputIntensity, rng)
+        # Translate each pixel into a sequence of spikes (vec[3500[784]])
+        # convert img to spikesTrains and writes into a inputSpikes file
+        spikesTrains = imgToSpikeTrain(imgArray[i], dt, computationSteps, inputIntensity, rng)
 
-    with open(inputSpikesFilename, "w") as filePointer:
-        for step in spikesTrains:
-            filePointer.write(str(list(step.astype(int)))
-                              [1:-1].replace(",", "").replace(" ", ""))
-            filePointer.write("\n")
+        with open(inputSpikesFilename, "w") as filePointer:
+            for step in spikesTrains:
+                filePointer.write(str(list(step.astype(int)))
+                                [1:-1].replace(",", "").replace(" ", ""))
+                filePointer.write("\n")
 
-    # ----------------------------------------------------------------------
-    # Scrivere l'array numpy su file nel formato che vi viene più comodo.
-    # L'array è formato da 3500 righe, una per ogni step temporale, e 784
-    # colonne, una per ogni ingresso.
-    # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # Scrivere l'array numpy su file nel formato che vi viene più comodo.
+        # L'array è formato da 3500 righe, una per ogni step temporale, e 784
+        # colonne, una per ogni ingresso.
+        # ----------------------------------------------------------------------
 
-    # ----------------------------------------------------------------------
-    # Lanciare il vostro script Rust.
-    # ----------------------------------------------------------------------
+        # ----------------------------------------------------------------------
+        # Lanciare il vostro script Rust.
+        # ----------------------------------------------------------------------
 
-    import subprocess as sp
+        import subprocess as sp
 
-    rustScript = "../target/debug/spiking_neural_network"
+        rustScript = "../target/debug/spiking_neural_network"
 
-    print("Iteration ", i)
+        print("Iteration ", i)
 
-    val = str(2)
-    sp.run([rustScript, val])
+        val = str(2)
+        sp.run([rustScript, val])
 
-    # ----------------------------------------------------------------------
-    # Leggere da file i contatori di uscita e convertirli in un vettore
-    # numpy. Qui di seguito uso un vettore fisso che mi serve nelle funzioni
-    # successive.
-    outputCounters = np.zeros(N_neurons[-1]).astype(int)
+        # ----------------------------------------------------------------------
+        # Leggere da file i contatori di uscita e convertirli in un vettore
+        # numpy. Qui di seguito uso un vettore fisso che mi serve nelle funzioni
+        # successive.
+        outputCounters = np.zeros(N_neurons[-1]).astype(int)
 
-    with open(outputCountersFilename, "r") as filePointer:
-        j = 0
-        for line in filePointer:
-            outputCounters[j] = int(line)
-            j += 1
-    # ----------------------------------------------------------------------
+        with open(outputCountersFilename, "r") as filePointer:
+            j = 0
+            for line in filePointer:
+                outputCounters[j] = int(line)
+                j += 1
+        # ----------------------------------------------------------------------
 
-    countersEvolution[i % updateInterval] = outputCounters
+        countersEvolution[i % updateInterval] = outputCounters
 
-    accuracies = computePerformance(i, updateInterval, countersEvolution, labelsArray, assignments, accuracies)
+        accuracies = computePerformance(i, updateInterval, countersEvolution, labelsArray, assignments, accuracies)
 
-    # print(nums)
+        # print(nums)
