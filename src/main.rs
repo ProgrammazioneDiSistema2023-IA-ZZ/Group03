@@ -4,17 +4,16 @@ use spiking_neural_network::configuration::Configuration;
 use spiking_neural_network::failure::*;
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
-
 use spiking_neural_network::failure::Components;
 
 //Accuracy: ['71.0%']
-// let configure_intra = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(144021)), 1);//matrix 380x380 bit 1 (segno) due to most frequent neuron (65)
+// let configuration = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(144021)), 0);
 
 //Accuracy: ['71.0%','69.0%','70.0%']
-// let config_null = Conf::new(vec![], Failure::None, 0);
+// let configuration = Conf::new(vec![], Failure::None, 0);
 
 //Accuracy: ['11.0%'] vth troppo alta => la v_mem non supera mai vth => spikes=0
-// let configure_v_th = Conf::new(vec![Components::VTh], Failure::StuckAt1(StuckAt1::new(3)), 1);//neuron 380 most frequent (65)
+// let configuration = Conf::new(vec![Components::VTh], Failure::StuckAt1(StuckAt1::new(3)), 1);
 
 
 const N_NEURONS: usize = 400;
@@ -47,25 +46,22 @@ fn main(){
     let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path);
     let intra_weights: Vec<Vec<f64>> = build_intra_weights();
 
-    // let (neurons,extra_weights,intra_weights) = get_params_network(&path);
+    let configuration = Conf::new(vec![], Failure::None, 0);
 
-    // let configure_v_th = Conf::new(vec![Components::VTh], Failure::StuckAt1(StuckAt1::new(val)), 5);//neuron 380 most frequent (65)
-    // let configure_intra = Conf::new(vec![Components::VTh], Failure::StuckAt0(StuckAt0::new(val)), 380);//matrix 380x380 bit 1 (segno) due to most frequent neuron (65)
-    // let config_null = Conf::new(vec![], Failure::None, 0);
-
-    /*NEW CONFIGURATIONS*/ //74,71,69
-    let configure_v_th = Conf::new(vec![Components::VMem], Failure::TransientBitFlip(TransientBitFlip::new(37)), 211);//neuron 380 most frequent (65)
-    // let configure_v_th = Conf::new(vec![Components::Tau], Failure::StuckAt1(StuckAt1::new(21)), 176);//neuron 380 most frequent (65)
-    // let configure_v_th = Conf::new(vec![Components::VReset], Failure::StuckAt0(StuckAt0::new(56)), 14);//neuron 380 most frequent (65)
-    // let configure_v_th = Conf::new(vec![Components::VRest], Failure::TransientBitFlip(TransientBitFlip::new(40)), 72);//neuron 380 most frequent (65)
-    // let configure_v_th = Conf::new(vec![Components::Dt], Failure::StuckAt1(StuckAt1::new(10)), 345);//neuron 380 most frequent (65)
-    // let configure_v_th = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(1234)), 78);//neuron 380 most frequent (65)
-    // let configure_v_th = Conf::new(vec![Components::Weights], Failure::StuckAt0(StuckAt0::new(2100)), 5);//neuron 380 most frequent (65)
+    /* NEW CONFIGURATIONS */
+    // let configuration = Conf::new(vec![Components::VTh], Failure::StuckAt0(StuckAt0::new(val)), 380);
+    // let configuration = Conf::new(vec![Components::VMem], Failure::TransientBitFlip(TransientBitFlip::new(37)), 211);
+    // let configuration = Conf::new(vec![Components::Tau], Failure::StuckAt1(StuckAt1::new(21)), 176);
+    // let configuration = Conf::new(vec![Components::VReset], Failure::StuckAt0(StuckAt0::new(56)), 14);
+    // let configuration = Conf::new(vec![Components::VRest], Failure::TransientBitFlip(TransientBitFlip::new(40)), 72);
+    // let configuration = Conf::new(vec![Components::Dt], Failure::StuckAt1(StuckAt1::new(10)), 345);
+    // let configuration = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(1234)), 0);
+    // let configuration = Conf::new(vec![Components::Weights], Failure::StuckAt0(StuckAt0::new(2100)), 0);
 
     // println!("{:?}",configure_v_th.get_vec_components()[0]);
 
     let mut snn = SnnBuilder::new(N_INPUTS)
-        .add_layer(neurons, extra_weights, intra_weights,configure_v_th)
+        .add_layer(neurons, extra_weights, intra_weights,configuration)
         .build();
 
 
