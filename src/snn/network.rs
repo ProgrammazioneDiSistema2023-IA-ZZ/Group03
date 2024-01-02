@@ -45,20 +45,20 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
     This approach examines user input during the runtime.
      */
     pub fn process(&mut self, spikes: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
-        // * check and compute the spikes duration *
+        /* check and compute the spikes duration */
         let spikes_duration = self.spikes_duration(spikes);
 
         let input_layer_dimension = self.get_input_layer_one_dim();
         let output_layer_dimension = self.get_output_last_layer_dim();
 
-        // * encode spikes into SpikeEvent(s) *
+        /* encode spikes into SpikeEvent(s) */
         let input_spike_events =
             SNN::<N, R>::encode_spikes(input_layer_dimension, spikes, spikes_duration);
 
-        // * process input *
+        /* process input */
         let output_spike_events = self.process_events(input_spike_events);
 
-        // * decode output into array shape *
+        /* decode output into array shape */
         SNN::<N, R>::decode_spikes(output_layer_dimension, output_spike_events, spikes_duration)
     }
 
@@ -67,7 +67,7 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
     If yes, it returns the duration, otherwise it triggers an error
      */
     fn spikes_duration(&self, spikes: &Vec<Vec<u8>>) -> usize {
-        // compute length of the first Vec (0 if it does not exist)
+        /* compute length of the first Vec (0 if it does not exist) */
         let spikes_duration = spikes.get(0)
             .unwrap_or(&Vec::new())
             .len();

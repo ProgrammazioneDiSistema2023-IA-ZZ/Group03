@@ -1,10 +1,10 @@
 use std::fs::{File};
 use std::io::{BufRead, BufReader, Write};
-use spiking_neural_network::configuration::Configuration;
 use spiking_neural_network::failure::*;
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
-use spiking_neural_network::failure::Components;
+//use spiking_neural_network::failure::Components;
+//use spiking_neural_network::configuration::Configuration;
 
 //Accuracy: ['71.0%']
 // let configuration = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(144021)), 0);

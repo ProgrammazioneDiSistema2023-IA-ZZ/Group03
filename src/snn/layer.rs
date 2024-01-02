@@ -57,13 +57,14 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     pub fn set_prev_spikes(&mut self, val: Vec<u8>) { self.prev_spikes = val }
 
     fn generate_faults(&mut self) {
-        /* If there is at least one component to fail, search the selected component to keep it broken */
+        /* if there is at least one component to fail, search the selected component to keep it broken */
         for component in self.configuration.get_vec_components() {
-            /* Get index of neuron and info of failure from configuration field */
+
+            /* get index of neuron and info of failure from configuration field */
             let index = self.configuration.get_index_neuron();
             let failure = self.configuration.get_failure();
 
-            /* Get neuron from vec of neurons */
+            /* get neuron from vec of neurons */
             let neuron = self.neurons.get_mut(index).unwrap();
 
             match component {
@@ -114,50 +115,46 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                     self.weights = matrix;
                 }
                 Components::PrevSpikes => {
-
                     let modified_prev_spikes = self.fault_prev_spikes(&failure);
-
                     self.set_prev_spikes(modified_prev_spikes);
-
                 }
                 Components::None => {}
             }
         }
     }
-    pub fn fault_prev_spikes(&self,failure: &Failure)->Vec<u8>{
+    pub fn fault_prev_spikes(&self, failure: &Failure) -> Vec<u8> {
         let mut vec = self.get_prev_spikes();
 
-        let i = failure.get_position().unwrap()  % vec.len();
+        let i = failure.get_position().unwrap() % vec.len();
 
         match failure {
-            Failure::StuckAt0(_)=>{
-                if vec[i]==1{
-                    vec[i]=0;
+            Failure::StuckAt0(_) => {
+                if vec[i] == 1 {
+                    vec[i] = 0;
                 }
-            },
-            Failure::StuckAt1(_)=>{
-                if vec[i]==0{
-                    vec[i]=1;
+            }
+            Failure::StuckAt1(_) => {
+                if vec[i] == 0 {
+                    vec[i] = 1;
                 }
-            },
-            Failure::TransientBitFlip(t)=>{
+            }
+            Failure::TransientBitFlip(t) => {
                 let changed = t.get_bit_changed();
-                if !changed{
-                    vec[i]=1-vec[i];
+                if !changed {
+                    vec[i] = 1 - vec[i];
                 }
-            },
+            }
             _ => {}
         }
 
         vec
-
     }
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64, output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
-        /* Generate FAULTS according to the configuration */
+        /* generate FAULTS according to the configuration */
         self.generate_faults();
 
-        /* For each neuron compute the sums of intra weights, extra weights and v_mem*/
+        /* for each neuron compute the sums of intra weights, extra weights and v_mem */
         for (index, neuron) in self.neurons.iter_mut().enumerate() {
             let events = input_spike_event.get_spikes();
 
@@ -198,12 +195,12 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
             /* time instant of the input spike */
             let instant = input_spike_event.get_ts();
 
-            /*flag to manage not firing layer*/
+            /* flag to manage not firing layer */
             let mut at_least_one_spike = false;
 
             let mut output_spikes = Vec::<u8>::with_capacity(self.neurons.len());
 
-            /*this function compute the v_mem for all the neurons considering the input spikes
+            /* this function compute the v_mem for all the neurons considering the input spikes
             and if there is configuration field it provides to apply the fault */
             self.generate_spike(&input_spike_event, instant, &mut output_spikes, &mut at_least_one_spike);
 
@@ -224,22 +221,26 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     }
 
     pub fn init(&mut self) {
-        self.prev_spikes.clear();    /* reset prev_spikes */
-        self.neurons.iter_mut().for_each(|neuron| neuron.init());  /* reset neurons */
+        /* reset prev_spikes */
+        self.prev_spikes.clear();
+
+        /* reset neurons */
+        self.neurons.iter_mut().for_each(|neuron| neuron.init());
     }
 }
 
 pub fn modify_bits(failure: Failure, mut val: u64) -> u64 {
-
     let mut position = failure.get_position().unwrap();
 
+    /* check if position of the bit is valid */
     if position >= 64 {
-        position = position%64;
+        position = position % 64;
     }
 
-    position = 63-position;
+    /* just correct the position with constant according to the bit library */
+    position = 63 - position;
 
-    /* Match the type of failure -> StuckAt0 / StuckAt1 / TransientBitFlip */
+    /* match the type of failure { StuckAt0, StuckAt1, TransientBitFlip } */
     match failure {
         Failure::StuckAt0(_s) => {
             val.set_bit(position, false);

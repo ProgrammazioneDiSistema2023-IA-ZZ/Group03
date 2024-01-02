@@ -99,11 +99,9 @@ impl Neuron for LifNeuron {
     fn get_v_mem(&self) -> f64 {
         self.v_mem
     }
-
     fn set_v_mem(&mut self, val: f64) {
         self.v_mem = val;
     }
-
     fn set_tau(&mut self, val: f64) {
         self.tau = val;
     }
@@ -120,7 +118,6 @@ impl Neuron for LifNeuron {
     fn get_dt(&self) -> f64 {
         self.dt
     }
-
     fn set_dt(&mut self, val: f64) {
         self.dt = val;
     }
