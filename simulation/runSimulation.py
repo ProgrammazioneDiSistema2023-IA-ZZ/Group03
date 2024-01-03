@@ -6,7 +6,7 @@ from inputInterface import imgToSpikeTrain
 import os
 # Time step duration in milliseconds
 dt = 0.1
-
+simulation = "./simulation"
 # Spikes trains duration in milliseconds
 trainDuration = 350
 
@@ -28,11 +28,11 @@ N_inputs = 784
 rng = np.random.default_rng()
 
 # Mnist test dataset
-images = "./mnist/t10k-images-idx3-ubyte"
-labels = "./mnist/t10k-labels-idx1-ubyte"
+images = simulation+"/mnist/t10k-images-idx3-ubyte"
+labels = simulation+"/mnist/t10k-labels-idx1-ubyte"
 
 # File containing the label associated to each neuron in the output layer
-assignmentsFile = "./networkParameters/assignments.npy"
+assignmentsFile = simulation+"/networkParameters/assignments.npy"
 
 outputCountersFilename = "outputCounters.txt"
 
@@ -45,7 +45,7 @@ def write_input_spikes():
     # Import dataset
     imgArray, _ = loadDataset(images, labels)
 
-    with open("./inputSpikes3.txt", 'w') as filePointer:
+    with open("./inputSpikes.txt", 'w') as filePointer:
 
         for i in range(updateInterval+1): 
             print(f"Iteration {i}"); 
@@ -60,7 +60,7 @@ def write_input_spikes():
 
 def compure_accuracy(): 
     
-    directory_path = './configurations'
+    directory_path = simulation+'/configurations'
 
 # Ottieni il percorso assoluto della cartella
 
@@ -97,10 +97,7 @@ def compure_accuracy():
         
         print(output.replace("_",",").replace(".txt","") +"," + accuracies)
 
-        with open('./logs/log.txt', 'a') as file:
+        with open(simulation+'/logs/log.txt', 'a') as file:
             file.write(output.replace("_",",").replace(".txt","") +"," + accuracies+"\n")
-            # file.writelines(output.replace("_",",").replace(".txt","") +"," + accuracies)
 
-compure_accuracy()
-            
-            
+compure_accuracy()            

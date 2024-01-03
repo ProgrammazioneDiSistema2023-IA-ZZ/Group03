@@ -66,7 +66,7 @@ fn start_snn(){
     let vec_comp = vec![Components::VTh, Components::VMem, Components::VReset, Components::VRest, Components::Tau, Components::Ts, Components::Dt, Components::Weights, Components::IntraWeights, Components::PrevSpikes];
     
     let path = get_current_dir();
-    for elem in vec_comp {
+    /*for elem in vec_comp {
         for _ in 0..5 {
 
             let mut rng1 = thread_rng();
@@ -112,13 +112,13 @@ fn start_snn(){
                 }
             }
         }
-    }
-    // let string = format!("{path}/simulation/runSimulation.py");
-    // let path_py = OsStr::new(&string);
-    // let output = Command::new("python").arg(path_py).output()
-    // .expect("Errore durante l'esecuzione del comando");
+    }*/
+    let string = format!("{path}/simulation/runSimulation.py");
+    let path_py = OsStr::new(&string);
+    let output = Command::new("python").arg(path_py).output()
+    .expect("Errore durante l'esecuzione del comando");
 
-    // println!("Output del comando Python: {:?}", output);
+    println!("Output del comando Python: {:?}", output);
 }
 
 fn get_file_name(conf:&Conf)->String{
