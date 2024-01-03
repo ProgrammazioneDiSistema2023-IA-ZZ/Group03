@@ -7,6 +7,8 @@ use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
 use spiking_neural_network::snn::configuration::Configuration;
 use std::process::Command;
+use zip::read::ZipArchive;
+
 const CYCLES: usize = 51;
 const N_NEURONS: usize = 400;
 const N_INPUTS: usize = 784;
@@ -24,8 +26,45 @@ fn get_current_dir()->String{
     path 
 }
 
+
+fn read_zip(path:&String) -> std::io::Result<()> {
+    // Specify the path to your zip file
+    let extract_to_dir = format!("{path}/simulation/");
+
+    let zip_file_path = format!("{extract_to_dir}inputSpikes.zip");
+
+    // Specify the directory where you want to extract the contents
+
+    // Open the zip file
+    let file = File::open(zip_file_path)?;
+    let mut archive = ZipArchive::new(file)?;
+
+    // Iterate over each file in the zip archive
+    let mut file = archive.by_index(0)?;
+
+    // Construct the output path by appending the extracted file's name to the extraction directory
+    let output_path = format!("{extract_to_dir}inputSpikes.txt"); 
+
+    let mut outfile = File::create(&output_path)?;
+    std::io::copy(&mut file, &mut outfile)?;
+
+    Ok(())
+}
+
 fn main(){
+    let path = get_current_dir();
+    let result = read_zip(&path); 
+
+    match result {
+        Ok(zip) => {start_snn();} 
+        Err(e)=>{println!("{:?}",e);}
+    }
+
+}
+
+fn start_snn(){
     let vec_comp = vec![Components::VTh, Components::VMem, Components::VReset, Components::VRest, Components::Tau, Components::Ts, Components::Dt, Components::Weights, Components::IntraWeights, Components::PrevSpikes];
+    
     let path = get_current_dir();
     for elem in vec_comp {
         for _ in 0..5 {
@@ -43,6 +82,7 @@ fn main(){
             let intra_weights: Vec<Vec<f64>> = build_intra_weights();
 
             let vec_type_fail = vec![Failure::StuckAt1(StuckAt1::new(random_bit)),Failure::StuckAt0(StuckAt0::new(random_bit)), Failure::TransientBitFlip(TransientBitFlip::new(random_bit))];
+
             //fail 0 piero, fail 1 vitto, fail 2 giorgio
             let configuration = Conf::new(vec![elem.clone()], vec_type_fail[0].clone(), random_index);
 
@@ -116,7 +156,7 @@ fn get_file_name(conf:&Conf)->String{
 
 fn read_multiple_input_spikes(path: &String)->Vec<Vec<Vec<u8>>>{
 
-    let path_input = format!("{path}/simulation/inputSpikes2.txt");
+    let path_input = format!("{path}/simulation/inputSpikes.txt");
     let input = File::open(path_input).expect("Something went wrong opening the file inputSpikes.txt!");
     let buffered = BufReader::new(input);
 
@@ -142,7 +182,7 @@ fn read_multiple_input_spikes(path: &String)->Vec<Vec<Vec<u8>>>{
             i=0;
             vec_input_spikes[count] = input_spikes.clone();
             count+=1;
-            if count == 51 {
+            if count == CYCLES {
                 break;
             }
         }

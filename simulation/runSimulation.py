@@ -1,6 +1,8 @@
 import numpy as np
 from mnist import loadDataset
 from outputInterface import computePerformance
+from inputInterface import imgToSpikeTrain
+
 import os
 # Time step duration in milliseconds
 dt = 0.1
@@ -15,7 +17,7 @@ computationSteps = int(trainDuration / dt)
 inputIntensity = 2.
 
 # Number of images after which the accuracy is evaluated
-updateInterval = 50
+updateInterval = 51
 
 # Network shape
 N_layers = 1
@@ -38,9 +40,26 @@ outputCountersFilename = "outputCounters.txt"
 # Initialize history of spikes
 countersEvolution = np.zeros((updateInterval, N_neurons[-1]))
 
+def write_input_spikes(): 
+
+    # Import dataset
+    imgArray, _ = loadDataset(images, labels)
+
+    with open("./inputSpikes3.txt", 'w') as filePointer:
+
+        for i in range(updateInterval+1): 
+            print(f"Iteration {i}"); 
+            spikesTrains = imgToSpikeTrain(imgArray[i], dt, computationSteps, inputIntensity, rng)
+            for step in spikesTrains:
+                filePointer.write(str(list(step.astype(int)))
+                                [1:-1].replace(",", "").replace(" ", ""))
+                filePointer.write("\n")
+
+#write_input_spikes()
+
+
 def compure_accuracy(): 
     
-
     directory_path = './configurations'
 
 # Ottieni il percorso assoluto della cartella
@@ -81,4 +100,7 @@ def compure_accuracy():
         with open('./logs/log.txt', 'a') as file:
             file.write(output.replace("_",",").replace(".txt","") +"," + accuracies+"\n")
             # file.writelines(output.replace("_",",").replace(".txt","") +"," + accuracies)
+
 compure_accuracy()
+            
+            
