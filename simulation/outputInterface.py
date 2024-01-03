@@ -59,7 +59,7 @@ def computePerformance(currentIndex, updateInterval, countersEvolution,
             maxCount[whereMaxSpikes] = spikesCount[whereMaxSpikes]
 
         # print computed labels
-        print(classification)
+        # print(classification)
 
         # Compute the accuracy and add it to the list of accuracies
         accuracies = updateAccuracy(classification, labelsSequence, accuracies)
@@ -94,11 +94,11 @@ def updateAccuracy(classification, labelsSequence, accuracies):
     correct = np.where(classification == labelsSequence)[0].size
 
     # Compute the percentage of accuracy and add it to the list
-    accuracies += ["{:.2f}".format(correct / classification.size * 100) + "%"]
+    accuracies = "{:.2f}".format(correct / classification.size * 100)
 
     # Print the accuracy
-    accuracyString = "\nAccuracy: " + str(accuracies) + "\n"
+    # accuracyString = "\nAccuracy: " + str(accuracies) + "\n"
 
-    print(accuracyString)
+    # print(accuracyString)
 
     return accuracies

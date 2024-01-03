@@ -1,20 +1,13 @@
-use std::fs::{File};
+use std::ffi::OsStr;
+use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use rand::{random, Rng, thread_rng};
+use rand::{Rng, thread_rng};
 use spiking_neural_network::failure::*;
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
-
-//Accuracy: ['71.0%']
-// let configuration = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(144021)), 0);
-
-//Accuracy: ['71.0%','69.0%','70.0%']
-// let configuration = Conf::new(vec![], Failure::None, 0);
-
-//Accuracy: ['11.0%'] vth troppo alta => la v_mem non supera mai vth => spikes=0
-// let configuration = Conf::new(vec![Components::VTh], Failure::StuckAt1(StuckAt1::new(3)), 1);
-
-
+use spiking_neural_network::snn::configuration::Configuration;
+use std::process::Command;
+const CYCLES: usize = 51;
 const N_NEURONS: usize = 400;
 const N_INPUTS: usize = 784;
 const N_INSTANTS: usize = 3500;
@@ -32,42 +25,131 @@ fn get_current_dir()->String{
 }
 
 fn main(){
+    let vec_comp = vec![Components::VTh, Components::VMem, Components::VReset, Components::VRest, Components::Tau, Components::Ts, Components::Dt, Components::Weights, Components::IntraWeights, Components::PrevSpikes];
     let path = get_current_dir();
+    for elem in vec_comp {
+        for _ in 0..5 {
 
-    let input_spikes: Vec<Vec<u8>> = read_input_spikes(&path);
+            let mut rng1 = thread_rng();
+            let random_bit = rng1.gen_range(0..64);
 
-    let neurons: Vec<LifNeuron> = build_neurons(&path);
-    let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path);
-    let intra_weights: Vec<Vec<f64>> = build_intra_weights();
+            let mut rng2 = thread_rng();
+            let random_index = rng2.gen_range(0..N_NEURONS);
 
-    let configuration = Conf::new(vec![], Failure::None, 0);
+            let input_spikes: Vec<Vec<Vec<u8>>> = read_multiple_input_spikes(&path);
 
-    let mut rng1 = thread_rng();
-    let random_bit = rng1.gen();
+            let neurons: Vec<LifNeuron> = build_neurons(&path);
+            let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path);
+            let intra_weights: Vec<Vec<f64>> = build_intra_weights();
 
-    let mut rng2 = thread_rng();
-    let random_index = rng2.gen_range(0..N_NEURONS);
+            let vec_type_fail = vec![Failure::StuckAt1(StuckAt1::new(random_bit)),Failure::StuckAt0(StuckAt0::new(random_bit)), Failure::TransientBitFlip(TransientBitFlip::new(random_bit))];
+            //fail 0 piero, fail 1 vitto, fail 2 giorgio
+            let configuration = Conf::new(vec![elem.clone()], vec_type_fail[0].clone(), random_index);
 
-    /* NEW CONFIGURATIONS */
-    let configuration = Conf::new(vec![Components::VTh], Failure::StuckAt0(StuckAt0::new(random_bit)), random_index);
-    // let configuration = Conf::new(vec![Components::VMem], Failure::TransientBitFlip(TransientBitFlip::new(37)), 211);
-    // let configuration = Conf::new(vec![Components::Tau], Failure::StuckAt1(StuckAt1::new(21)), 176);
-    // let configuration = Conf::new(vec![Components::VReset], Failure::StuckAt0(StuckAt0::new(56)), 14);
-    // let configuration = Conf::new(vec![Components::VRest], Failure::TransientBitFlip(TransientBitFlip::new(40)), 72);
-    // let configuration = Conf::new(vec![Components::Dt], Failure::StuckAt1(StuckAt1::new(10)), 345);
-    // let configuration = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(1234)), 0);
-    // let configuration = Conf::new(vec![Components::Weights], Failure::StuckAt0(StuckAt0::new(2100)), 0);
+            let file_name = get_file_name(&configuration);
+            let path_output = format!("{path}/simulation/configurations/{file_name}");
+            let mut output_file = File::create(path_output).expect("Something went wrong opening the file outputCounters.txt!");
 
-    // println!("{:?}",configure_v_th.get_vec_components()[0]);
+            for i in 0..CYCLES{
 
-    let mut snn = SnnBuilder::new(N_INPUTS)
-        .add_layer(neurons, extra_weights, intra_weights,configuration)
-        .build();
+                let mut snn = SnnBuilder::new(N_INPUTS)
+                    .add_layer(neurons.clone(), extra_weights.clone(), intra_weights.clone(),configuration.clone())
+                    .build();
 
+                println!("Iteration {i}");
+                let output_spikes = snn.process(&input_spikes[i]);
 
-    let output_spikes = snn.process(&input_spikes);
+                let mut neurons_sum = vec![0u32;400];
 
-    write_to_output_file(output_spikes,&path);
+                for k in 0..N_NEURONS {
+                    for j in 0..N_INSTANTS {
+                        neurons_sum[k] += output_spikes[k][j] as u32;
+                    }
+                }
+
+                for n in 0..N_NEURONS {
+                    output_file.write_all(format!("{}\n", neurons_sum[n]).as_bytes()).expect("Something went wrong writing into the file outputCounters.txt!");
+                }
+            }
+        }
+    }
+    // let string = format!("{path}/simulation/runSimulation.py");
+    // let path_py = OsStr::new(&string);
+    // let output = Command::new("python").arg(path_py).output()
+    // .expect("Errore durante l'esecuzione del comando");
+
+    // println!("Output del comando Python: {:?}", output);
+}
+
+fn get_file_name(conf:&Conf)->String{
+    let components = conf.get_vec_components();
+    let comp = components[0].clone();
+
+    let comp_string = match comp {
+        Components::VTh => {"VTh"}
+        Components::VRest => {"VRest"}
+        Components::VReset => {"VReset"}
+        Components::Tau => {"Tau"}
+        Components::VMem => {"VMem"}
+        Components::Ts => {"Ts"}
+        Components::Dt => {"Dt"}
+        Components::Weights => {"Weights"}
+        Components::IntraWeights => {"IntraWeights"}
+        Components::PrevSpikes => {"PrevSpikes"}
+        Components::None => {"None"}
+    };
+
+    let failure = conf.get_failure();
+
+    let failure_string =
+        match failure {
+            Failure::StuckAt0(s) => {format!("StuckAt0_{}",s.get_position())}
+            Failure::StuckAt1(s) => {format!("StuckAt1_{}",s.get_position())}
+            Failure::TransientBitFlip(t) => {format!("Transient_{}",t.get_position())}
+            Failure::None => {"None".to_string()}
+        };
+    let neuron_index = conf.get_index_neuron();
+
+    format!("{comp_string}_{failure_string}_{neuron_index}.txt")
+
+}
+
+fn read_multiple_input_spikes(path: &String)->Vec<Vec<Vec<u8>>>{
+
+    let path_input = format!("{path}/simulation/inputSpikes2.txt");
+    let input = File::open(path_input).expect("Something went wrong opening the file inputSpikes.txt!");
+    let buffered = BufReader::new(input);
+
+    let mut vec_input_spikes:Vec<Vec<Vec<u8>>> = vec![vec![vec![0; N_INSTANTS]; N_INPUTS];CYCLES];
+
+    let mut i = 0;
+    let mut count = 0;
+    let mut input_spikes: Vec<Vec<u8>> = vec![vec![0; N_INSTANTS]; N_INPUTS];
+
+    for line in buffered.lines() {
+
+        let l = line.unwrap().replace("\n","");
+        let mut j = 0;
+        let chars = convert_line_into_u8(l);
+        chars.into_iter().for_each(| ch | {
+            input_spikes[j][i] = ch;
+            j += 1;
+        });
+
+        i += 1;
+
+        if i%N_INSTANTS==0 && i>0{
+            i=0;
+            vec_input_spikes[count] = input_spikes.clone();
+            count+=1;
+            if count == 51 {
+                break;
+            }
+        }
+
+    }
+
+    vec_input_spikes
 
 
 }
@@ -118,39 +200,11 @@ fn build_intra_weights() -> Vec<Vec<f64>> {
     intra_weights
 }
 
-/**
-This function reads the input spikes from the input file and returns a 2D Vec of u8.
- */
-fn read_input_spikes(path:&String) -> Vec<Vec<u8>> {
-
-    let path_input = format!("{path}/inputSpikes.txt");
-
-    let input = File::open(path_input).expect("Something went wrong opening the file inputSpikes.txt!");
-    let buffered = BufReader::new(input);
-
-    let mut input_spikes: Vec<Vec<u8>> = vec![vec![0; N_INSTANTS]; N_INPUTS];
-
-    let mut i = 0;
-
-    for line in buffered.lines() {
-        let mut j = 0;
-        let chars = convert_line_into_u8(line.unwrap());
-        chars.into_iter().for_each(| ch | {
-            input_spikes[j][i] = ch;
-            j += 1;
-        });
-        i += 1;
-    }
-
-    input_spikes
-}
-
-
-/**
+/*
 This function reads the weights file and returns a 2D Vec of weights
  */
 fn read_extra_weights(path:&String) -> Vec<Vec<f64>> {
-    let path_weights_file = format!("{path}/networkParameters/weightsOut.txt");
+    let path_weights_file = format!("{path}/simulation/networkParameters/weightsOut.txt");
 
     let input = File::open(path_weights_file).expect("Something went wrong opening the file weightsOut.txt!");
     let buffered = BufReader::new(input);
@@ -175,9 +229,10 @@ fn read_extra_weights(path:&String) -> Vec<Vec<f64>> {
 /**
 This function reads the threshold file and returns a Vec of thresholds
  */
+
 fn read_thresholds(path:&String) -> Vec<f64> {
 
-    let path_threshold_file = format!("{path}/networkParameters/thresholdsOut.txt");
+    let path_threshold_file = format!("{path}/simulation/networkParameters/thresholdsOut.txt");
 
     let input = File::open(path_threshold_file).expect("Something went wrong opening the file thresholdsOut.txt!");
     let buffered = BufReader::new(input);
@@ -196,30 +251,7 @@ fn read_thresholds(path:&String) -> Vec<f64> {
     thresholds
 }
 
-/**
-This function writes the output spikes to the output file.
- */
-fn write_to_output_file(output_spikes: Vec<Vec<u8>>,path:&String) -> () {
-    let path_output = format!("{path}/outputCounters.txt");
-
-    let mut output_file = File::create(path_output).expect("Something went wrong opening the file outputCounters.txt!");
-
-    let mut neurons_sum: Vec<u32> = vec![0; N_NEURONS];
-
-    for i in 0..N_NEURONS {
-        for j in 0..N_INSTANTS {
-            neurons_sum[i] += output_spikes[i][j] as u32;
-        }
-    }
-
-    for i in 0..N_NEURONS {
-        output_file.write_all(format!("{}\n", neurons_sum[i]).as_bytes()).expect("Something went wrong writing into the file outputCounters.txt!");
-    }
-
-}
-
-
-/**
+/*
 This function converts a line of the input file into a Vec of u8.
  */
 fn convert_line_into_u8(line: String) -> Vec<u8> {
@@ -227,6 +259,3 @@ fn convert_line_into_u8(line: String) -> Vec<u8> {
         .map(|ch| (ch.to_digit(10).unwrap()) as u8)
         .collect::<Vec<u8>>()
 }
-
-
-

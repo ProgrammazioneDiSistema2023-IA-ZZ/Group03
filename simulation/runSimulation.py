@@ -1,9 +1,7 @@
 import numpy as np
-import random as rd
 from mnist import loadDataset
-from inputInterface import imgToSpikeTrain
 from outputInterface import computePerformance
-
+import os
 # Time step duration in milliseconds
 dt = 0.1
 
@@ -17,7 +15,7 @@ computationSteps = int(trainDuration / dt)
 inputIntensity = 2.
 
 # Number of images after which the accuracy is evaluated
-updateInterval = 100
+updateInterval = 50
 
 # Network shape
 N_layers = 1
@@ -34,76 +32,53 @@ labels = "./mnist/t10k-labels-idx1-ubyte"
 # File containing the label associated to each neuron in the output layer
 assignmentsFile = "./networkParameters/assignments.npy"
 
-inputSpikesFilename = "inputSpikes.txt"
 outputCountersFilename = "outputCounters.txt"
 
-accuracies = []
 
 # Initialize history of spikes
 countersEvolution = np.zeros((updateInterval, N_neurons[-1]))
 
-# Load the assignments from file
-with open(assignmentsFile, 'rb') as fp:
-    assignments = np.load(fp)  # len = 400
+def compure_accuracy(): 
+    
 
-# Import dataset
-imgArray, labelsArray = loadDataset(images, labels)
+    directory_path = './configurations'
 
-numberOfCycles = 101
+# Ottieni il percorso assoluto della cartella
 
-#Loop over the whole dataset
-# end = 64
-# nums = []
-# for k in range(end):
+    directory_contents = os.listdir(directory_path)
+    accuracies =[]
+    outputCounters = np.zeros(N_neurons[-1]).astype(int)
+     
+        # Load the assignments from file
+    with open(assignmentsFile, 'rb') as fp:
+            assignments = np.load(fp)  # len = 400
 
-#     random_num = rd.randint(0, end)
-#     nums += [random_num]
-
-for i in range(numberOfCycles):
-        # Translate each pixel into a sequence of spikes (vec[3500[784]])
-        # convert img to spikesTrains and writes into a inputSpikes file
-        spikesTrains = imgToSpikeTrain(imgArray[i], dt, computationSteps, inputIntensity, rng)
-
-        with open(inputSpikesFilename, "w") as filePointer:
-            for step in spikesTrains:
-                filePointer.write(str(list(step.astype(int)))
-                                [1:-1].replace(",", "").replace(" ", ""))
-                filePointer.write("\n")
-
-        # ----------------------------------------------------------------------
-        # Scrivere l'array numpy su file nel formato che vi viene più comodo.
-        # L'array è formato da 3500 righe, una per ogni step temporale, e 784
-        # colonne, una per ogni ingresso.
-        # ----------------------------------------------------------------------
-
-        # ----------------------------------------------------------------------
-        # Lanciare il vostro script Rust.
-        # ----------------------------------------------------------------------
-
-        import subprocess as sp
-
-        rustScript = "../target/debug/spiking_neural_network"
-
-        print("Iteration ", i)
-
-        val = str(2)
-        sp.run([rustScript, val])
-
-        # ----------------------------------------------------------------------
-        # Leggere da file i contatori di uscita e convertirli in un vettore
-        # numpy. Qui di seguito uso un vettore fisso che mi serve nelle funzioni
-        # successive.
-        outputCounters = np.zeros(N_neurons[-1]).astype(int)
-
-        with open(outputCountersFilename, "r") as filePointer:
-            j = 0
+        # Import dataset
+    _, labelsArray = loadDataset(images, labels)
+    
+    for output in directory_contents:
+    
+        k = 0 
+        i = 0 
+        j = 0
+                
+        with open(directory_path+"/"+ output, "r") as filePointer:
             for line in filePointer:
-                outputCounters[j] = int(line)
+                
+                outputCounters[k] = int(line)
                 j += 1
-        # ----------------------------------------------------------------------
+                k = j%400
 
-        countersEvolution[i % updateInterval] = outputCounters
+                if k==0: 
+                    countersEvolution[i % updateInterval] = outputCounters
 
-        accuracies = computePerformance(i, updateInterval, countersEvolution, labelsArray, assignments, accuracies)
+                    i+=1 
 
-        # print(nums)
+                    accuracies = computePerformance(i, updateInterval, countersEvolution, labelsArray, assignments, accuracies)
+        
+        print(output.replace("_",",").replace(".txt","") +"," + accuracies)
+
+        with open('./logs/log.txt', 'a') as file:
+            file.write(output.replace("_",",").replace(".txt","") +"," + accuracies+"\n")
+            # file.writelines(output.replace("_",",").replace(".txt","") +"," + accuracies)
+compure_accuracy()

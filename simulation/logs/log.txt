@@ -1,0 +1,5 @@
+VTh,StuckAt0,1,129,70.00
+VTh,StuckAt0,22,8,70.00
+VTh,StuckAt0,23,35,70.00
+VTh,StuckAt0,63,277,70.00
+VTh,StuckAt0,8,200,70.00
