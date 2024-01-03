@@ -1,10 +1,9 @@
 use std::fs::{File};
 use std::io::{BufRead, BufReader, Write};
+use rand::{random, Rng, thread_rng};
 use spiking_neural_network::failure::*;
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
-//use spiking_neural_network::failure::Components;
-//use spiking_neural_network::configuration::Configuration;
 
 //Accuracy: ['71.0%']
 // let configuration = Conf::new(vec![Components::IntraWeights], Failure::StuckAt0(StuckAt0::new(144021)), 0);
@@ -33,11 +32,6 @@ fn get_current_dir()->String{
 }
 
 fn main(){
-
-    // let mut arg = std::env::args();
-    // let num = arg.nth(1).unwrap();
-    // let val:usize = num.parse().unwrap();
-
     let path = get_current_dir();
 
     let input_spikes: Vec<Vec<u8>> = read_input_spikes(&path);
@@ -48,8 +42,14 @@ fn main(){
 
     let configuration = Conf::new(vec![], Failure::None, 0);
 
+    let mut rng1 = thread_rng();
+    let random_bit = rng1.gen();
+
+    let mut rng2 = thread_rng();
+    let random_index = rng2.gen_range(0..N_NEURONS);
+
     /* NEW CONFIGURATIONS */
-    // let configuration = Conf::new(vec![Components::VTh], Failure::StuckAt0(StuckAt0::new(val)), 380);
+    let configuration = Conf::new(vec![Components::VTh], Failure::StuckAt0(StuckAt0::new(random_bit)), random_index);
     // let configuration = Conf::new(vec![Components::VMem], Failure::TransientBitFlip(TransientBitFlip::new(37)), 211);
     // let configuration = Conf::new(vec![Components::Tau], Failure::StuckAt1(StuckAt1::new(21)), 176);
     // let configuration = Conf::new(vec![Components::VReset], Failure::StuckAt0(StuckAt0::new(56)), 14);
