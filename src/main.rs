@@ -7,6 +7,8 @@ use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
 use spiking_neural_network::snn::configuration::Configuration;
 use std::process::Command;
+use std::thread;
+use std::thread::JoinHandle;
 use zip::read::ZipArchive;
 
 const CYCLES: usize = 51;
@@ -39,52 +41,66 @@ fn start_snn() {
 
     /* for each component simulate 5 times accuracy over 50 inputSpikes*/
     for elem in vec_comp {
+
+        let mut threads = Vec::<JoinHandle<()>>::new();
         for _ in 0..5 {
-            /* compute random bit and random index to set fault in precise way */
-            let mut rng1 = thread_rng();
-            let random_bit = rng1.gen_range(0..64);
-            let mut rng2 = thread_rng();
-            let random_index = rng2.gen_range(0..N_NEURONS);
+            let elem_clone = elem.clone();
+            let path_clone = path.clone();
+            let thread = thread::spawn(move || {
+                /* compute random bit and random index to set fault in precise way */
+                let mut rng1 = thread_rng();
+                let random_bit = rng1.gen_range(0..64);
+                let mut rng2 = thread_rng();
+                let random_index = rng2.gen_range(0..N_NEURONS);
 
-            /* build parameters of the network */
-            let input_spikes: Vec<Vec<Vec<u8>>> = read_multiple_input_spikes(&path);
-            let neurons: Vec<LifNeuron> = build_neurons(&path);
-            let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path);
-            let intra_weights: Vec<Vec<f64>> = build_intra_weights();
+                /* build parameters of the network */
+                let input_spikes: Vec<Vec<Vec<u8>>> = read_multiple_input_spikes(&path_clone);
+                let neurons: Vec<LifNeuron> = build_neurons(&path_clone);
+                let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path_clone);
+                let intra_weights: Vec<Vec<f64>> = build_intra_weights();
 
-            let vec_type_fail = vec![
-                Failure::StuckAt1(StuckAt1::new(random_bit)),
-                Failure::StuckAt0(StuckAt0::new(random_bit)),
-                Failure::TransientBitFlip(TransientBitFlip::new(random_bit))];
+                let vec_type_fail = vec![
+                    Failure::StuckAt1(StuckAt1::new(random_bit)),
+                    Failure::StuckAt0(StuckAt0::new(random_bit)),
+                    Failure::TransientBitFlip(TransientBitFlip::new(random_bit))];
 
-            //fail 0 piero, fail 1 vitto, fail 2 giorgio
-            let configuration = Conf::new(vec![elem.clone()], vec_type_fail[1].clone(), random_index);
+                //fail 0 piero, fail 1 vitto, fail 2 giorgio
+                let configuration = Conf::new(vec![elem_clone], vec_type_fail[1].clone(), random_index);
 
-            let file_name = get_file_name(&configuration);
-            let path_output = format!("{path}/simulation/configurations/{file_name}");
-            let mut output_file = File::create(path_output).expect("Something went wrong opening the file outputCounters.txt!");
+                let file_name = get_file_name(&configuration);
+                let path_output = format!("{path_clone}/simulation/configurations/{file_name}");
+                let mut output_file = File::create(path_output).expect("Something went wrong opening the file outputCounters.txt!");
 
-            /* run simulation over snn with fault configuration */
-            for i in 0..CYCLES {
-                let mut snn = SnnBuilder::new(N_INPUTS)
-                    .add_layer(neurons.clone(), extra_weights.clone(), intra_weights.clone(), configuration.clone())
-                    .build();
+                /* run simulation over snn with fault configuration */
+                for i in 0..CYCLES {
+                    let mut snn = SnnBuilder::new(N_INPUTS)
+                        .add_layer(neurons.clone(), extra_weights.clone(), intra_weights.clone(), configuration.clone())
+                        .build();
 
-                println!("Iteration {i}");
-                let output_spikes = snn.process(&input_spikes[i]);
+                    println!("Iteration {i}");
+                    let output_spikes = snn.process(&input_spikes[i]);
 
-                let mut neurons_sum = vec![0u32; 400];
+                    let mut neurons_sum = vec![0u32; 400];
 
-                for k in 0..N_NEURONS {
-                    for j in 0..N_INSTANTS {
-                        neurons_sum[k] += output_spikes[k][j] as u32;
+                    for k in 0..N_NEURONS {
+                        for j in 0..N_INSTANTS {
+                            neurons_sum[k] += output_spikes[k][j] as u32;
+                        }
+                    }
+
+                    for n in 0..N_NEURONS {
+                        output_file.write_all(format!("{}\n", neurons_sum[n]).as_bytes()).expect("Something went wrong writing into the file outputCounters.txt!");
                     }
                 }
+            });
 
-                for n in 0..N_NEURONS {
-                    output_file.write_all(format!("{}\n", neurons_sum[n]).as_bytes()).expect("Something went wrong writing into the file outputCounters.txt!");
-                }
-            }
+            /* push the new thread into pool of threads */
+            threads.push(thread);
+        }
+
+        /* waiting for threads to terminate */
+        for thread in threads {
+            thread.join().unwrap();
         }
     }
 
@@ -246,7 +262,7 @@ fn read_thresholds(path: &String) -> Vec<f64> {
 
     let mut thresholds: Vec<f64> = vec![0f64; N_NEURONS];
 
-    for (i,line) in buffered.lines().enumerate() {
+    for (i, line) in buffered.lines().enumerate() {
         thresholds[i] = line.unwrap().parse::<f64>().expect("Cannot parse String into f64!");
     }
 
