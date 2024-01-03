@@ -7,6 +7,7 @@ import os
 
 # Time step duration in milliseconds
 dt = 0.1
+# simulation = "./"
 simulation = "./simulation"
 # Spikes trains duration in milliseconds
 trainDuration = 350
@@ -37,9 +38,6 @@ assignmentsFile = simulation + "/networkParameters/assignments.npy"
 
 outputCountersFilename = "outputCounters.txt"
 
-# Initialize history of spikes
-countersEvolution = np.zeros((updateInterval, N_neurons[-1]))
-
 
 def write_input_spikes():
     # Import dataset
@@ -62,7 +60,7 @@ def compure_accuracy():
     # Ottieni il percorso assoluto della cartella
 
     directory_contents = os.listdir(directory_path)
-    accuracies = []
+    
     outputCounters = np.zeros(N_neurons[-1]).astype(int)
 
     # Load the assignments from file
@@ -77,6 +75,13 @@ def compure_accuracy():
         k = 0
         i = 0
         j = 0
+
+        # Initialize history of spikes
+        countersEvolution = np.zeros((updateInterval, N_neurons[-1]))
+        accuracies = "0"
+        
+        # print(output); 
+        # print(accuracies); 
 
         with open(directory_path + "/" + output, "r") as filePointer:
             for line in filePointer:
@@ -93,10 +98,66 @@ def compure_accuracy():
                     accuracies = computePerformance(i, updateInterval, countersEvolution, labelsArray, assignments,
                                                     accuracies)
 
+        # print(countersEvolution[updateInterval-1]); 
+
         print(output.replace("_", ",").replace(".txt", "") + "," + accuracies)
 
         with open(simulation + '/logs/log.txt', 'a') as file:
             file.write(output.replace("_", ",").replace(".txt", "") + "," + accuracies + "\n")
 
 
+def compare_files(): 
+    directory_path = simulation + '/configurations'
+
+    file1 = "VMem_Transient_13_28.txt"
+    file2 = "VMem_Transient_34_247.txt"
+    # file2 = "VReset_Transient_9_24.txt"
+
+    vec_file1 = np.zeros((updateInterval, N_neurons[-1])) 
+    vec_file2 = np.zeros((updateInterval, N_neurons[-1])) 
+
+    temp = np.zeros(N_neurons[-1]); 
+
+    i=0; j=0; k=0; 
+      
+    with open(directory_path + "/" + file1, "r") as filePointer:
+        for line in filePointer:
+
+            temp[k] = int(line)
+            j += 1
+            k = j % 400
+
+            if k == 0:
+                vec_file1[i % updateInterval] = temp
+
+                i += 1
+
+    i=0; j=0; k=0; 
+    
+    with open(directory_path + "/" + file2, "r") as filePointer:
+        for line in filePointer:
+
+            temp[k] = int(line)
+            j += 1
+            k = j % 400
+
+            if k == 0:
+                vec_file2[i % updateInterval] = temp
+
+                i += 1
+
+    
+    # Trova gli indici in cui gli array sono diversi
+    rows,cols = np.where(vec_file1 != vec_file2)
+    # Stampa gli indici delle differenze
+    print("Indici delle differenze:")
+    for row, col in zip(rows, cols):
+        print(f"Riga {row}, Colonna {col}")
+    
+    are_equal = np.array_equal(vec_file1, vec_file2)
+
+    print(f"Arrays are equal: {are_equal}")
+    
+
 compure_accuracy()
+#compare_files()

@@ -125,28 +125,30 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     pub fn fault_prev_spikes(&self, failure: &Failure) -> Vec<u8> {
         let mut vec = self.get_prev_spikes();
 
-        let i = failure.get_position().unwrap() % vec.len();
+        if vec.len() > 0 {
+            let i = failure.get_position().unwrap() % vec.len();
 
-        match failure {
-            Failure::StuckAt0(_) => {
-                if vec[i] == 1 {
-                    vec[i] = 0;
+            match failure {
+                Failure::StuckAt0(_) => {
+                    if vec[i] == 1 {
+                        vec[i] = 0;
+                    }
                 }
-            }
-            Failure::StuckAt1(_) => {
-                if vec[i] == 0 {
-                    vec[i] = 1;
+                Failure::StuckAt1(_) => {
+                    if vec[i] == 0 {
+                        vec[i] = 1;
+                    }
                 }
-            }
-            Failure::TransientBitFlip(t) => {
-                let changed = t.get_bit_changed();
-                if !changed {
-                    vec[i] = 1 - vec[i];
+                Failure::TransientBitFlip(t) => {
+                    let changed = t.get_bit_changed();
+                    if !changed {
+                        vec[i] = 1 - vec[i];
+                    }
                 }
+                _ => {}
             }
-            _ => {}
         }
-
+        
         vec
     }
 
