@@ -32,21 +32,18 @@ fn start_snn() {
     let path = get_current_dir();
 
     /* list of components to simulate */
-    // let vec_comp = vec![
-    //     Components::VTh, Components::VMem,
-    //     Components::VReset, Components::VRest,
-    //     Components::Tau, Components::Ts,
-    //     Components::Dt, Components::Weights,
-    //     Components::IntraWeights, Components::PrevSpikes];
-
-    let vec_comp = vec![Components::PrevSpikes];
-
+    let vec_comp = vec![
+        Components::VTh, Components::VMem,
+        Components::VReset, Components::VRest,
+        Components::Tau, Components::Ts,
+        Components::Dt, Components::Weights,
+        Components::IntraWeights, Components::PrevSpikes];
 
     /* for each component simulate 5 times accuracy over 50 inputSpikes*/
     for elem in vec_comp {
 
         let mut threads = Vec::<JoinHandle<()>>::new();
-        for _ in 0..2 {
+        for _ in 0..5 {
             let elem_clone = elem.clone();
             let path_clone = path.clone();
             let thread = thread::spawn(move || {
