@@ -7,14 +7,6 @@ pub struct Conf {
     index_neuron: usize,
 }
 
-/*
-#[derive(Debug, Clone, PartialEq)]
-pub struct Conf {
-    info: Vec<Components, usize>,
-    failure: Failure,
-}
-*/
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Components {
     /* List of possible fault components of LifNeuron */
