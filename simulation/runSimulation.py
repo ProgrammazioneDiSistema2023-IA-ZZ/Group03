@@ -38,7 +38,6 @@ assignmentsFile = simulation + "/networkParameters/assignments.npy"
 
 outputCountersFilename = "outputCounters.txt"
 
-
 def write_input_spikes():
     # Import dataset
     imgArray, _ = loadDataset(images, labels)
@@ -46,7 +45,7 @@ def write_input_spikes():
     with open("./inputSpikes.txt", 'w') as filePointer:
 
         for i in range(updateInterval + 1):
-            print(f"Iteration {i}");
+            print(f"Iteration {i}")
             spikesTrains = imgToSpikeTrain(imgArray[i], dt, computationSteps, inputIntensity, rng)
             for step in spikesTrains:
                 filePointer.write(str(list(step.astype(int)))
@@ -98,13 +97,10 @@ def compure_accuracy():
                     accuracies = computePerformance(i, updateInterval, countersEvolution, labelsArray, assignments,
                                                     accuracies)
 
-        # print(countersEvolution[updateInterval-1]); 
-
         print(output.replace("_", ",").replace(".txt", "") + "," + accuracies)
 
         with open(simulation + '/logs/log.txt', 'a') as file:
             file.write(output.replace("_", ",").replace(".txt", "") + "," + accuracies + "\n")
-
 
 def compare_files(): 
     directory_path = simulation + '/configurations'
@@ -116,9 +112,11 @@ def compare_files():
     vec_file1 = np.zeros((updateInterval, N_neurons[-1])) 
     vec_file2 = np.zeros((updateInterval, N_neurons[-1])) 
 
-    temp = np.zeros(N_neurons[-1]); 
+    temp = np.zeros(N_neurons[-1])
 
-    i=0; j=0; k=0; 
+    i=0
+    j=0
+    k=0
       
     with open(directory_path + "/" + file1, "r") as filePointer:
         for line in filePointer:

@@ -32,26 +32,33 @@ fn start_snn() {
     let path = get_current_dir();
 
     /* list of components to simulate */
+    //VITTORIO
     let vec_comp = vec![
-        Components::VTh, Components::VMem,
-        Components::VReset, Components::VRest,
-        Components::Tau, Components::Ts,
+        Components::Ts,
         Components::Dt, Components::Weights,
         Components::IntraWeights, Components::PrevSpikes];
 
-    /* for each component simulate 5 times accuracy over 50 inputSpikes*/
-    for elem in vec_comp {
+    //PIERO
+    // let vec_comp = vec![
+    //     Components::VTh, Components::VMem,
+    //     Components::VReset, Components::VRest,
+    //     Components::Tau];
 
+
+    /* compute random bit and random index to set fault in precise way */
+    let mut rng1 = thread_rng();
+    let random_bit = rng1.gen_range(0..12);
+
+    let mut rng2 = thread_rng();
+    let random_index = rng2.gen_range(0..N_NEURONS);
+
+    for elem in vec_comp {
         let mut threads = Vec::<JoinHandle<()>>::new();
-        for _ in 0..5 {
+        /* for each component simulates 3 times accuracy (for each type of failure) over 50 inputSpikes*/
+        for f in 0..3 {
             let elem_clone = elem.clone();
             let path_clone = path.clone();
             let thread = thread::spawn(move || {
-                /* compute random bit and random index to set fault in precise way */
-                let mut rng1 = thread_rng();
-                let random_bit = rng1.gen_range(0..64);
-                let mut rng2 = thread_rng();
-                let random_index = rng2.gen_range(0..N_NEURONS);
 
                 /* build parameters of the network */
                 let input_spikes: Vec<Vec<Vec<u8>>> = read_multiple_input_spikes(&path_clone);
@@ -62,10 +69,12 @@ fn start_snn() {
                 let vec_type_fail = vec![
                     Failure::StuckAt1(StuckAt1::new(random_bit)),
                     Failure::StuckAt0(StuckAt0::new(random_bit)),
-                    Failure::TransientBitFlip(TransientBitFlip::new(random_bit))];
+                    Failure::TransientBitFlip(TransientBitFlip::new(random_bit))
+                ];
 
-                //fail 0 piero, fail 1 vitto, fail 2 giorgio
-                let configuration = Conf::new(vec![elem_clone], vec_type_fail[2].clone(), random_index);
+                /***PIERO INSERISCI QUI****/
+
+                let configuration = Conf::new(vec![elem_clone.clone()], vec_type_fail[f].clone(), random_index);
 
                 let file_name = get_file_name(&configuration);
                 let path_output = format!("{path_clone}/simulation/configurations/{file_name}");
@@ -77,7 +86,7 @@ fn start_snn() {
                         .add_layer(neurons.clone(), extra_weights.clone(), intra_weights.clone(), configuration.clone())
                         .build();
 
-                    println!("Iteration {i}");
+                    println!("Iteration {i} - Comp {:?}", elem_clone);
                     let output_spikes = snn.process(&input_spikes[i]);
 
                     let mut neurons_sum = vec![0u32; 400];

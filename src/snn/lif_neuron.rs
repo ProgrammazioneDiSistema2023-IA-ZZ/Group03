@@ -5,12 +5,12 @@ use std::f64::consts::E;
 /** Model of LIF Neuron (Leaky Integrate-and-Fire) */
 #[derive(Debug, Clone, PartialEq)]
 pub struct LifNeuron {
-    v_th: f64,       /* Threshold potential */
-    v_rest: f64,     /* Resting potential */
-    v_reset: f64,    /* Reset potential */
+    v_th: f64,      /* Threshold potential */
+    v_rest: f64,    /* Resting potential */
+    v_reset: f64,   /* Reset potential */
     tau: f64,
-    v_mem: f64,      /* Membrane potential */
-    ts: u64,         /* Last instant in which has been received at least one spike */
+    v_mem: f64,     /* Membrane potential */
+    ts: u64,        /* Last instant in which has been received at least one spike */
     dt: f64,
 }
 
