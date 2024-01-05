@@ -130,7 +130,9 @@ def compare_files():
 
                 i += 1
 
-    i=0; j=0; k=0; 
+    i=0
+    j=0
+    k=0
     
     with open(directory_path + "/" + file2, "r") as filePointer:
         for line in filePointer:
