@@ -50,9 +50,6 @@ impl LifNeuron {
 }
 
 impl Neuron for LifNeuron {
-    fn decrement_v_mem(&mut self, intra: f64) {
-        self.v_mem += intra;
-    }
     fn get_v_th(&self) -> f64 {
         self.v_th
     }
@@ -63,7 +60,7 @@ impl Neuron for LifNeuron {
                  self.get_v_mem(), self.get_ts());
     }
     fn calculate_v_mem(&mut self, t: u64, extra_intra_sum: f64) -> u8 {
-        let mut diff_time = 0.0f64;
+        let diff_time;
         if t > self.ts {
             diff_time = (t - self.ts) as f64;
         }

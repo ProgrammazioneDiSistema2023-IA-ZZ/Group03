@@ -6,9 +6,10 @@ use spiking_neural_network::failure::*;
 use spiking_neural_network::lif_neuron::LifNeuron;
 use spiking_neural_network::snn::builder::SnnBuilder;
 use spiking_neural_network::snn::configuration::Configuration;
-use std::process::Command;
+use std::process::{Command};
 use std::thread;
 use std::thread::JoinHandle;
+use bit::BitIndex;
 use zip::read::ZipArchive;
 
 const CYCLES: usize = 51;
@@ -19,7 +20,7 @@ const N_INSTANTS: usize = 3500;
 fn main() {
     let path = get_current_dir();
 
-    /* function that extract the inputSpikes.txt from zip */
+    /* function that extract the inputSpikes.txt from zip to avoid the limit of 100MB */
     let result = read_zip(&path);
 
     match result {
@@ -32,49 +33,58 @@ fn start_snn() {
     let path = get_current_dir();
 
     /* list of components to simulate */
-    //VITTORIO
     let vec_comp = vec![
-        Components::Ts,
-        Components::Dt, Components::Weights,
-        Components::IntraWeights, Components::PrevSpikes];
+        Components::Ts, Components::Dt, Components::Weights,
+        Components::IntraWeights, Components::PrevSpikes,
+        Components::VTh, Components::VMem, Components::VReset,
+        Components::VRest, Components::Tau];
 
-    //PIERO
-    // let vec_comp = vec![
-    //     Components::VTh, Components::VMem,
-    //     Components::VReset, Components::VRest,
-    //     Components::Tau];
-
-
-    /* compute random bit and random index to set fault in precise way */
-    let mut rng1 = thread_rng();
-    let random_bit = rng1.gen_range(0..12);
-
-    let mut rng2 = thread_rng();
-    let random_index = rng2.gen_range(0..N_NEURONS);
-
-    for elem in vec_comp {
+    /* repeats the simulation with 2 parallel threads on the same component but with different types of failures */
+    for elem in vec_comp.clone() {
         let mut threads = Vec::<JoinHandle<()>>::new();
-        /* for each component simulates 3 times accuracy (for each type of failure) over 50 inputSpikes*/
+
+        /* compute random bit and random index to set fault in precise way */
+        let mut rng1 = thread_rng();
+        let random_bit = rng1.gen_range(0..12);
+        let mut rng2 = thread_rng();
+        let random_index = rng2.gen_range(0..N_NEURONS);
+
         for f in 0..3 {
-            let elem_clone = elem.clone();
+            let elem_c = elem.clone();
             let path_clone = path.clone();
+
+            /* build parameters of the network */
+            let input_spikes: Vec<Vec<Vec<u8>>> = read_multiple_input_spikes(&path_clone);
+            let neurons: Vec<LifNeuron> = build_neurons(&path_clone);
+            let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path_clone);
+            let intra_weights: Vec<Vec<f64>> = build_intra_weights();
+
+            let vec_type_fail = vec![
+                Failure::StuckAt1(StuckAt1::new(random_bit)),
+                Failure::StuckAt0(StuckAt0::new(random_bit)),
+                Failure::TransientBitFlip(TransientBitFlip::new(random_bit)),
+            ];
+
+            /* checks if the simulation makes sense or if the selected bit
+                is already at 0/1, in which case the thread will not spawned */
+            let position = vec_type_fail[f].get_position().unwrap();
+            let val = get_val(elem_c.clone(), neurons.clone(), random_index, intra_weights.clone(), extra_weights.clone(), position);
+            let bit = val.bit(position);
+            match vec_type_fail[f] {
+                Failure::StuckAt0(_) if bit == false => {
+                    println!("Useless simulation StuckAt0");
+                    continue;
+                }
+                Failure::StuckAt1(_) if bit == true => {
+                    println!("Useless simulation StuckAt1");
+                    continue;
+                }
+                _ => {}
+            }
+
             let thread = thread::spawn(move || {
-
-                /* build parameters of the network */
-                let input_spikes: Vec<Vec<Vec<u8>>> = read_multiple_input_spikes(&path_clone);
-                let neurons: Vec<LifNeuron> = build_neurons(&path_clone);
-                let extra_weights: Vec<Vec<f64>> = read_extra_weights(&path_clone);
-                let intra_weights: Vec<Vec<f64>> = build_intra_weights();
-
-                let vec_type_fail = vec![
-                    Failure::StuckAt1(StuckAt1::new(random_bit)),
-                    Failure::StuckAt0(StuckAt0::new(random_bit)),
-                    Failure::TransientBitFlip(TransientBitFlip::new(random_bit))
-                ];
-
-                /***PIERO INSERISCI QUI****/
-
-                let configuration = Conf::new(vec![elem_clone.clone()], vec_type_fail[f].clone(), random_index);
+                /* creates a Conf instance that will be inserted into the layer to report the fault  */
+                let configuration = Conf::new(vec![elem_c.clone()], vec_type_fail[f].clone(), random_index);
 
                 let file_name = get_file_name(&configuration);
                 let path_output = format!("{path_clone}/simulation/configurations/{file_name}");
@@ -86,11 +96,17 @@ fn start_snn() {
                         .add_layer(neurons.clone(), extra_weights.clone(), intra_weights.clone(), configuration.clone())
                         .build();
 
-                    println!("Iteration {i} - Comp {:?}", elem_clone);
+                    /* print debug */
+                    print!("Iteration {i}/50 - Component {:?} - ", elem_c);
+                    match configuration.get_failure() {
+                        Failure::StuckAt0(_) => { println!("StuckAt0"); }
+                        Failure::StuckAt1(_) => { println!("StuckAt1"); }
+                        Failure::TransientBitFlip(_) => { println!("TransientBitFlip"); }
+                        _ => {}
+                    }
+
                     let output_spikes = snn.process(&input_spikes[i]);
-
                     let mut neurons_sum = vec![0u32; 400];
-
                     for k in 0..N_NEURONS {
                         for j in 0..N_INSTANTS {
                             neurons_sum[k] += output_spikes[k][j] as u32;
@@ -117,7 +133,40 @@ fn start_snn() {
     let string = format!("{path}/simulation/runSimulation.py");
     let path_py = OsStr::new(&string);
     Command::new("python").arg(path_py).output()
-        .expect("Errore durante l'esecuzione del comando");
+        .expect("Error during execution of the command");
+}
+
+fn get_val(e: Components, neurons: Vec<LifNeuron>, index: usize, intra_weights: Vec<Vec<f64>>, extra_weights: Vec<Vec<f64>>, position: usize) -> usize {
+    return match e {
+        Components::VTh => {
+            neurons.get(index).unwrap().get_v_th().to_bits()
+        }
+        Components::VRest => {
+            neurons.get(index).unwrap().get_v_rest().to_bits()
+        }
+        Components::VReset => {
+            neurons.get(index).unwrap().get_v_reset().to_bits()
+        }
+        Components::Tau => {
+            neurons.get(index).unwrap().get_tau().to_bits()
+        }
+        Components::Dt => {
+            neurons.get(index).unwrap().get_dt().to_bits()
+        }
+        Components::IntraWeights => {
+            let matrix = intra_weights.clone();
+            let i = (position / 64) / matrix.len();
+            let j = (position / 64) % matrix.len();
+            matrix[i][j].to_bits()
+        }
+        Components::Weights => {
+            let matrix = extra_weights.clone();
+            let i = (position / 64) / matrix.len();
+            let j = (position / 64) % matrix.len();
+            matrix[i][j].to_bits()
+        }
+        _ => { 0 }
+    } as usize;
 }
 
 fn get_file_name(conf: &Conf) -> String {
@@ -283,10 +332,9 @@ This function converts a line of the input file into a Vec of u8.
  */
 fn convert_line_into_u8(line: String) -> Vec<u8> {
     line.chars()
-        .map(|ch| (ch.to_digit(10).unwrap()) as u8)
+        .map(|ch| ch.to_digit(10).unwrap() as u8)
         .collect::<Vec<u8>>()
 }
-
 
 fn get_current_dir() -> String {
     let current_dir = std::env::current_dir().expect("Failed to get current directory");

@@ -35,31 +35,22 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
     pub fn get_number_neurons(&self) -> usize {
         self.neurons.len()
     }
-
     pub fn get_neurons(&self) -> Vec<N> { self.neurons.clone() }
-
     pub fn get_weights(&self) -> Vec<Vec<f64>> {
         self.weights.clone()
     }
-
     pub fn get_intra_weights(&self) -> Vec<Vec<f64>> {
         self.intra_weights.clone()
     }
-
     pub fn get_prev_spikes(&self) -> Vec<u8> { self.prev_spikes.clone() }
-
     pub fn get_configuration(&self) -> R { self.configuration.clone() }
-
     pub fn set_intra_weights(&mut self, val: Vec<Vec<f64>>) { self.intra_weights = val }
-
     pub fn set_weights(&mut self, val: Vec<Vec<f64>>) { self.weights = val }
-
     pub fn set_prev_spikes(&mut self, val: Vec<u8>) { self.prev_spikes = val }
 
     fn generate_faults(&mut self) {
         /* if there is at least one component to fail, search the selected component to keep it broken */
         for component in self.configuration.get_vec_components() {
-
             /* get index of neuron and info of failure from configuration field */
             let index = self.configuration.get_index_neuron();
             let failure = self.configuration.get_failure();
@@ -148,7 +139,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
                 _ => {}
             }
         }
-        
+
         vec
     }
 
@@ -239,7 +230,7 @@ pub fn modify_bits(failure: Failure, mut val: u64) -> u64 {
         position = position % 64;
     }
 
-    /* just correct the position with constant according to the bit library */
+    /* just correct the position with constant */
     position = 63 - position;
 
     /* match the type of failure { StuckAt0, StuckAt1, TransientBitFlip } */

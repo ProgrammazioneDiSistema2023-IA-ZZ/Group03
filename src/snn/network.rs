@@ -33,7 +33,6 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
     }
 
     pub fn get_layers(&self) -> Vec<Layer<N, R>> {
-        //self.layers.iter().map(|layer| layer.lock().unwrap().clone()).collect()
         self.layers.iter().map(|layer| layer.lock().unwrap().clone()).collect()
     }
 
@@ -115,7 +114,6 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
                 raw_spikes[out_neuron_index][spike_event.get_ts() as usize] = spike;
             }
         }
-
         raw_spikes
     }
 
@@ -183,7 +181,6 @@ impl<N: Neuron + Clone, R: Configuration + Clone + Send + 'static> SNN<N, R> {
 impl<'a, N: Neuron + Clone + 'static, R: Configuration + Clone + Send + 'static> IntoIterator for &'a mut SNN<N, R> {
     type Item = &'a mut Arc<Mutex<Layer<N, R>>>;
     type IntoIter = IterMut<'a, Arc<Mutex<Layer<N, R>>>>;
-
     fn into_iter(self) -> Self::IntoIter {
         self.layers.iter_mut()
     }
