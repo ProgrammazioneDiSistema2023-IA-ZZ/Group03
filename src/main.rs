@@ -9,6 +9,7 @@ use spiking_neural_network::snn::configuration::Configuration;
 use std::process::{Command};
 use std::thread;
 use std::thread::JoinHandle;
+use std::time::Instant;
 use bit::BitIndex;
 use zip::read::ZipArchive;
 
@@ -31,6 +32,8 @@ fn main() {
 
 fn start_snn() {
     let path = get_current_dir();
+    let start = Instant::now();
+    let mut threads = Vec::<JoinHandle<()>>::new();
 
     /* list of components to simulate */
     let vec_comp = vec![
@@ -41,7 +44,6 @@ fn start_snn() {
 
     /* repeats the simulation with 2 parallel threads on the same component but with different types of failures */
     for elem in vec_comp.clone() {
-        let mut threads = Vec::<JoinHandle<()>>::new();
 
         /* compute random bit and random index to set fault in precise way */
         let mut rng1 = thread_rng();
@@ -122,11 +124,16 @@ fn start_snn() {
             /* push the new thread into pool of threads */
             threads.push(thread);
         }
+    }
 
-        /* waiting for threads to terminate */
-        for thread in threads {
-            thread.join().unwrap();
-        }
+
+    /* print duration */
+    let time = start.elapsed();
+    println!("Duration simulations: {:.2} min", time.as_secs() as f64 / 60.0);
+
+    /* waiting for threads to terminate */
+    for thread in threads {
+        thread.join().unwrap();
     }
 
     /* when all simulations are finished run the python script to print logs file */
@@ -134,6 +141,7 @@ fn start_snn() {
     let path_py = OsStr::new(&string);
     Command::new("python").arg(path_py).output()
         .expect("Error during execution of the command");
+
 }
 
 fn get_val(e: Components, neurons: Vec<LifNeuron>, index: usize, intra_weights: Vec<Vec<f64>>, extra_weights: Vec<Vec<f64>>, position: usize) -> usize {

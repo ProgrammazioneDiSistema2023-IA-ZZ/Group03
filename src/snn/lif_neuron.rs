@@ -54,11 +54,6 @@ impl Neuron for LifNeuron {
         self.v_th
     }
     fn set_v_th(&mut self, new_val: f64) { self.v_th = new_val }
-    fn print_lif_neuron(&self) {
-        println!("v_th : {}, v_rest : {}, v_reset : {}, tau : {}, v_mem: {}, ts: {}",
-                 self.get_v_th(), self.get_v_rest(), self.get_v_reset(), self.get_tau(),
-                 self.get_v_mem(), self.get_ts());
-    }
     fn calculate_v_mem(&mut self, t: u64, extra_intra_sum: f64) -> u8 {
         let diff_time;
         if t > self.ts {

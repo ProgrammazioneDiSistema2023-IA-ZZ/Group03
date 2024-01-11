@@ -9,7 +9,6 @@ pub trait Neuron: Send {
      */
     fn get_v_th(&self) -> f64;
     fn set_v_th(&mut self, new_val:f64);
-    fn print_lif_neuron(&self) ;
     fn calculate_v_mem(&mut self, t: u64, extra_sum: f64) -> u8;
 
     /** initialize all data structures of Neuron */
