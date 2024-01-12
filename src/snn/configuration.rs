@@ -7,4 +7,6 @@ pub trait Configuration: Send {
     fn get_len_vec_components(&self) -> usize;
     fn get_failure(&self) -> Failure;
     fn get_index_neuron(&self) -> usize;
+    fn set_done(&self, val : bool);
+    fn get_done(&self) -> bool;
 }

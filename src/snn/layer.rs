@@ -145,8 +145,13 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64, output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
         /* generate FAULTS according to the configuration */
-        self.generate_faults();
-
+        if self.configuration.get_done() == false {
+            self.generate_faults();
+            if !self.configuration.get_vec_components().contains(&Components::VMem) && !self.configuration.get_vec_components().contains(&Components::Ts)
+             && !self.configuration.get_vec_components().contains(&Components::PrevSpikes) {
+                self.configuration.set_done(true);
+            }
+        }
         /* for each neuron compute the sums of intra weights, extra weights and v_mem */
         for (index, neuron) in self.neurons.iter_mut().enumerate() {
             let events = input_spike_event.get_spikes();

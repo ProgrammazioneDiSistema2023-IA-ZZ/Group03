@@ -5,6 +5,7 @@ pub struct Conf {
     components: Vec<Components>,
     failure: Failure,
     index_neuron: usize,
+    done: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -74,7 +75,7 @@ impl TransientBitFlip {
 
 impl Conf {
     pub fn new(components: Vec<Components>, failure: Failure, index_neuron: usize) -> Self {
-        Self { components, failure, index_neuron }
+        Self { components, failure, index_neuron, done:false }
     }
 }
 
@@ -87,6 +88,8 @@ impl Configuration for Conf {
     fn get_len_vec_components(&self) -> usize { self.components.len() }
     fn get_failure(&self) -> Failure { self.failure.clone() }
     fn get_index_neuron(&self) -> usize { self.index_neuron }
+    fn set_done(&self, val: bool) {self.done = val }
+    fn get_done(&self) -> bool { self.done }
 }
 
 impl Failure {
