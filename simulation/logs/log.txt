@@ -202,3 +202,7 @@ VTh,StuckAt1,1,151,70.00
 VTh,Transient,1,151,74.00
 Weights,StuckAt1,1,331,70.00
 Weights,Transient,1,331,70.00
+VRest,Transient,1,40,64.00
+VMem,Transient,1,29,10.00
+VMem,StuckAt1,12,392,72.00
+Tau,StuckAt1,5,398,72.00
