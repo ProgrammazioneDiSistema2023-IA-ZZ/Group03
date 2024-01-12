@@ -44,11 +44,9 @@ fn start_snn() {
 
     /* repeats the simulation with 2 parallel threads on the same component but with different types of failures */
     for elem in vec_comp.clone() {
-
         /* compute random bit and random index to set fault in precise way */
-        //let mut rng1 = thread_rng();
-        //let random_bit = rng1.gen_range(0..12);
-        let random_bit = 1;
+        let mut rng1 = thread_rng();
+        let random_bit = rng1.gen_range(0..12);
         let mut rng2 = thread_rng();
         let random_index = rng2.gen_range(0..N_NEURONS);
 
