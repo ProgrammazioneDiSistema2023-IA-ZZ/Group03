@@ -46,8 +46,9 @@ fn start_snn() {
     for elem in vec_comp.clone() {
 
         /* compute random bit and random index to set fault in precise way */
-        let mut rng1 = thread_rng();
-        let random_bit = rng1.gen_range(0..12);
+        //let mut rng1 = thread_rng();
+        //let random_bit = rng1.gen_range(0..12);
+        let random_bit = 1;
         let mut rng2 = thread_rng();
         let random_index = rng2.gen_range(0..N_NEURONS);
 
@@ -126,15 +127,15 @@ fn start_snn() {
         }
     }
 
-
-    /* print duration */
-    let time = start.elapsed();
-    println!("Duration simulations: {:.2} min", time.as_secs() as f64 / 60.0);
-
     /* waiting for threads to terminate */
     for thread in threads {
         thread.join().unwrap();
     }
+
+    /* print duration */
+    let time = start.elapsed();
+    let min = time.as_secs() as f64 / 60.0;
+    println!("Duration simulations: {:.2} min", min);
 
     /* when all simulations are finished run the python script to print logs file */
     let string = format!("{path}/simulation/runSimulation.py");

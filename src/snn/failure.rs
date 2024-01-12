@@ -88,7 +88,7 @@ impl Configuration for Conf {
     fn get_len_vec_components(&self) -> usize { self.components.len() }
     fn get_failure(&self) -> Failure { self.failure.clone() }
     fn get_index_neuron(&self) -> usize { self.index_neuron }
-    fn set_done(&self, val: bool) {self.done = val }
+    fn set_done(&mut self, val: bool) {self.done = val }
     fn get_done(&self) -> bool { self.done }
 }
 
