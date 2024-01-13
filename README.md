@@ -89,6 +89,50 @@ pub struct Conf {
     components: Vec<Components>,    /* Vec of components to inject fault */
     failure: Failure,               /* kind of failure */
     index_neuron: usize,            /* index of neuron */
+    done: bool,                     /* a boolean used to optimize code*/
+}
+```
+
+- `Components` represent components that could break in `Conf`.
+```rust
+pub enum Components {
+    /* List of possible fault components of LifNeuron */
+    VTh, VRest, VReset,
+    Tau, VMem, Ts, Dt,
+
+    /* List of possible fault components of Layers*/
+    Weights, IntraWeights,
+    PrevSpikes,
+
+    None,
+}
+```
+
+- `Failure` represent the generic failure that could be applied in `Conf`, each one of these is a struct.
+```rust
+pub enum Failure {
+    StuckAt0(StuckAt0),
+    StuckAt1(StuckAt1),
+    TransientBitFlip(TransientBitFlip),
+    None,
+}
+```
+
+- `StuckAt1`, `StuckAt0` and `TransientBitFlip` represent the failure `Failure`.
+```rust
+pub struct StuckAt1 {
+    position: usize,
+    value: u8,
+}
+
+pub struct StuckAt0 {
+    position: usize,
+    value: u8,
+}
+
+pub struct TransientBitFlip {
+    position: usize,
+    bit_changed: bool,
 }
 ```
 
