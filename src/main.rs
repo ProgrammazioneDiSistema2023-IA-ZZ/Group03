@@ -1,3 +1,5 @@
+mod demo;
+
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
@@ -12,6 +14,7 @@ use std::thread::JoinHandle;
 use std::time::Instant;
 use bit::BitIndex;
 use zip::read::ZipArchive;
+use crate::demo::demo;
 
 const CYCLES: usize = 51;
 const N_NEURONS: usize = 400;
@@ -19,11 +22,11 @@ const N_INPUTS: usize = 784;
 const N_INSTANTS: usize = 3500;
 
 fn main() {
+
+    //demo();
+
     let path = get_current_dir();
-
-    /* function that extract the inputSpikes.txt from zip to avoid the limit of 100MB */
     let result = read_zip(&path);
-
     match result {
         Ok(_zip) => { start_snn(); }
         Err(e) => { println!("{:?}", e); }
@@ -140,7 +143,6 @@ fn start_snn() {
     let path_py = OsStr::new(&string);
     Command::new("python").arg(path_py).output()
         .expect("Error during execution of the command");
-
 }
 
 fn get_val(e: Components, neurons: Vec<LifNeuron>, index: usize, intra_weights: Vec<Vec<f64>>, extra_weights: Vec<Vec<f64>>, position: usize) -> usize {
@@ -178,7 +180,7 @@ fn get_val(e: Components, neurons: Vec<LifNeuron>, index: usize, intra_weights: 
 
 fn get_file_name(conf: &Conf) -> String {
     let components = conf.get_vec_components();
-    let comp = components[0].clone();
+    let comp = components.get(0).unwrap_or(&Components::None).clone();
 
     let comp_string = match comp {
         Components::VTh => { "VTh" }
@@ -191,7 +193,7 @@ fn get_file_name(conf: &Conf) -> String {
         Components::Weights => { "Weights" }
         Components::IntraWeights => { "IntraWeights" }
         Components::PrevSpikes => { "PrevSpikes" }
-        Components::None => { "None" }
+        _ => { "NoFault" }
     };
 
     let failure = conf.get_failure();

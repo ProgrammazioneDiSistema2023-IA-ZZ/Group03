@@ -145,7 +145,7 @@ impl<N: Neuron + Clone + Send + 'static, R: Configuration + Clone + Send + 'stat
 
     fn generate_spike(&mut self, input_spike_event: &SpikeEvent, instant: u64, output_spikes: &mut Vec<u8>, at_least_one_spike: &mut bool) {
         /* generate FAULTS according to the configuration */
-        if self.configuration.get_done() == false {
+        if self.configuration.get_done() == false && self.configuration.get_failure() != Failure::None  {
             self.generate_faults();
             if !self.configuration.get_vec_components().contains(&Components::VMem) && !self.configuration.get_vec_components().contains(&Components::Ts)
              && !self.configuration.get_vec_components().contains(&Components::PrevSpikes) {
